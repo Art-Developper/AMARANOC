@@ -4,8 +4,12 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        'dark-background': 'rgb(16, 22, 35)', 
+      },
       screens: {
-        'custom-md': '900px', // Ավելացնել նոր custom breakpoint
+        'custom-md': '900px', 
+        'custom-footer-md': '1280px',
       },
     },
   },
