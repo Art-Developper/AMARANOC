@@ -1,1 +1,82 @@
 @import "tailwindcss" ;
+
+/* Ավելի լավ մենյուի անիմացիաների համար */
+.bm-overlay {
+  background: rgba(0, 0, 0, 0.3); /* Մնա սև, թափանցիկ */
+}
+
+/* Ընդհանուր sidebar ոճեր */
+.bm-menu-wrap {
+    position: fixed; /* Կարևոր է ֆիքսված դիրքի համար */
+    height: 100%;
+    top: 0;
+    right: 0; /* Եթե right է դրված React կոմպոնենտում */
+}
+
+.bm-menu {
+  background: #fff; /* Սպիտակ ֆոն */
+  padding: 2.5em 1.5em 0;
+  font-size: 1.15em;
+  box-shadow: -2px 0 5px rgba(0,0,0,0.2); /* Փոքր ստվեր ավելացնել */
+  color: #000; /* Լռելյայն տեքստի գույնը սև */
+}
+
+/* Մենյուի էլեմենտների ոճեր */
+.bm-item-list {
+  display: flex;
+  flex-direction: column;
+  padding: 0.8em;
+  /* Տեքստի ոճեր, որպեսզի ավելի լավ տեսք ունենա */
+}
+
+.bm-item {
+  display: block; /* Որպեսզի յուրաքանչյուր հղում լինի առանձին տողի վրա */
+  text-decoration: none;
+  margin-bottom: 25px; /* Ավելացնել բացատ մենյուի կետերի միջև */
+  color: #333; /* Մուգ մոխրագույն կամ սև տեքստ */
+  transition: color 0.2s;
+  font-size: 1.5em; /* Ավելի մեծ տառաչափ */
+  font-weight: 500; /* Միջին հաստություն */
+}
+
+.bm-item:hover {
+  color: #ff9800; /* Նարնջագույն hover էֆեկտ */
+}
+
+/* Burger icon-ի կոճակի տեղադրումը (x-ի փոխարեն) */
+.bm-burger-button {
+  position: absolute;
+  width: 36px;
+  height: 30px;
+  right: 20px; /* Ավելի աջ տեղաշարժել */
+  top: 18px; /* Ավելի ցածր տեղաշարժել, որպեսզի համապատասխանի հեդերին */
+}
+
+/* Փակելու X կոճակը */
+.bm-cross-button {
+  height: 30px; /* Ավելի մեծ չափ */
+  width: 30px; /* Ավելի մեծ չափ */
+  right: 15px !important; /* Կարգավորել դիրքը */
+  top: 15px !important; /* Կարգավորել դիրքը */
+  outline: none; /* Հեռացնել outline-ը սեղմելիս */
+}
+
+.bm-cross {
+  background: #000; /* Սև խաչ */
+}
+
+/* Burger icon-ի գծերը (եթե օգտագործում եք լռելյայն) */
+.bm-burger-bars {
+  background: #000; /* Սև գծեր */
+}
+
+/* Morph shape necessary with bubble or elastic (սա կարող է հեռացվել, եթե չեք օգտագործում այդ անիմացիաները) */
+.bm-morph-shape {
+  fill: #fff; /* Սպիտակ ֆոն */
+}
+
+/* Համոզվել, որ բովանդակությունը չի թաքնվում մենյուի տակ */
+#page-wrap { 
+ margin-right: 10px;
+  /* Քանի որ ձերը աջից է, այս դեպքում կարիք չկա */
+}
