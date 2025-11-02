@@ -1,10 +1,30 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import logo from "../assets/img/logo.svg";
 import { Link } from "react-router-dom";
 import { FaUser } from 'react-icons/fa';
 import { slide as Menu } from 'react-burger-menu';
+import { auth } from '../firebase'; 
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 const Header = () => {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            
+        } catch (error) {
+            console.error("Error signing out:", error.message);
+        }
+    };
+
     return (
         <header className="py-4 font-sans ">
             <div className="container mx-auto flex items-center justify-between px-4">
@@ -14,28 +34,36 @@ const Header = () => {
                 </Link>
 
                 <nav className="hidden lg:flex items-center gap-8 text-lg font-medium">
-                    <Link to={"/AMARANOC.git"} className="text-black hover:decoration-orange-500 transition-colors">
+                    <Link to={"/AMARANOC.git"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">
                         Գլխավոր էջ
                     </Link>
-                    <Link to={"/discounts"} className="text-black hover:decoration-orange-500 transition-colors">
+                    <Link to={"/discounts"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">
                         Զեղչեր
                     </Link>
-                    <Link to={"/services"} className="text-black hover:decoration-orange-500 transition-colors">
+                    <Link to={"/services"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">
                         Ծառայություններ
                     </Link>
-                    <Link to={"/about"} className="text-black  hover:decoration-orange-500 transition-colors">
+                    <Link to={"/about"} className="text-black  hover:underline hover:decoration-orange-500 transition-colors">
                         Մեր Մասին
                     </Link>
                 </nav>
 
 
                 <div className="flex items-center gap-6">
-   
-                    <Link to={"/login"} className="hidden lg:flex items-center gap-4 text-xl">
-                        <FaUser className="cursor-pointer " />
-                    </Link>
+                    {user ? (
+                        <div className="hidden lg:flex items-center gap-4 text-sm">
+                            <span className="text-black">{user.email}</span>
+                            <button onClick={handleSignOut} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
+                                Դուրս գալ
+                            </button>
+                        </div>
+                    ) : (
+                        <Link to={"/login"} className="hidden lg:flex items-center gap-4 text-xl">
+                            <FaUser className="cursor-pointer " />
+                        </Link>
+                    )}
 
-                    <div className="relative hidden custom-md:block"> 
+                    <div className="relative hidden custom-md:block">
                         <input
                             type="text"
                             placeholder="Որոնում..."
@@ -53,10 +81,19 @@ const Header = () => {
                         <Link id="about" className="menu-item" to="/discounts">Զեղչեր</Link>
                         <Link id="contact" className="menu-item" to="/services">Ծառայություններ</Link>
                         <Link id="about-us" className="menu-item" to="/about">Մեր Մասին</Link>
-                        <Link id="login" className="menu-item" to="/login">Մուտք</Link>
-                        
+                        {user ? (
+                            <>
+                                <span className="menu-item text-white">{user.email}</span>
+                                <button onClick={handleSignOut} className="menu-item bg-orange-500 text-white rounded-md p-2 m-2">
+                                    Դուրս գալ
+                                </button>
+                            </>
+                        ) : (
+                            <Link id="login" className="menu-item" to="/login">Մուտք</Link>
+                        )}
 
-                        <div className="custom-md:hidden mt-8 px-4 w-full"> 
+
+                        <div className="custom-md:hidden mt-8 px-4 w-full">
                             <div className="relative">
                                 <input
                                     type="text"
