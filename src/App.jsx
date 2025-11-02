@@ -13,7 +13,7 @@ function App() {
       <Routes>
         <Route path="/AMARANOC.git" element={<Home />} />
         {/* <Route path="/about" element={<AboutPage />} /> */}
-        <Route path='/login' element={<Login />} />
+        <Route path='AMARANOC.git/login' element={<Login />} />
       </Routes>
     </BrowserRouter>
   );
