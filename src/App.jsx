@@ -1,7 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
-
 import Home from './pages/HomePage';
 // import About from "./pages/AboutPage"
 import Login from './components/Login';
@@ -13,7 +11,7 @@ function App() {
       <Routes>
         <Route path="/AMARANOC.git" element={<Home />} />
         {/* <Route path="/about" element={<AboutPage />} /> */}
-        <Route path='AMARANOC.git/login' element={<Login />} />
+        <Route path='/login' element={<Login />} />
       </Routes>
     </BrowserRouter>
   );

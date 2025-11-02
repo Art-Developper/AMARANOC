@@ -58,7 +58,7 @@ const Header = () => {
                             </button>
                         </div>
                     ) : (
-                        <Link to={"AMARANOC.git/login"} className="hidden lg:flex items-center gap-4 text-xl">
+                        <Link to={"/login"} className="hidden lg:flex items-center gap-4 text-xl">
                             <FaUser className="cursor-pointer " />
                         </Link>
                     )}
