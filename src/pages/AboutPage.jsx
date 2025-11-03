@@ -1,8 +1,18 @@
-// const About =()=>{
-//     return(
-//         <>
-//         </>
-//     )
-// }
+import Header from "../components/Header";
+import AboutMission from "../components/AboutMission";
+import Announcement from "../components/Announcement";
+import Footer from "../components/Footer";
 
-// export default About
+
+const About =()=>{
+    return(
+        <>
+            <Header/>
+            <AboutMission/>
+            <Announcement/>
+            <Footer/>
+        </>
+    )
+}
+
+export default About
