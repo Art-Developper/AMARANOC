@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/HomePage';
 import ServicePage from './pages/ServicePage';
 import DiscountPage from './pages/DiscountPage';
+import ChatPage from './pages/Chat';
 import About from "./pages/AboutPage"
 import Login from './components/Login';
 
@@ -15,6 +16,7 @@ function App() {
         <Route path="/discounts"  element={<DiscountPage />}/>
         <Route path="/about" element={<About />} />
         <Route path='/services' element={<ServicePage />}/>
+        <Route path='/chat' element={<ChatPage />}/>
         <Route path='/login' element={<Login />} />
       </Routes>
     </BrowserRouter>

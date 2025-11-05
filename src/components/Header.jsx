@@ -3,7 +3,7 @@ import logo from "../assets/img/logo.svg";
 import { Link } from "react-router-dom";
 import { FaUser } from 'react-icons/fa';
 import { slide as Menu } from 'react-burger-menu';
-import { auth } from '../firebase'; 
+import { auth } from '../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 const Header = () => {
@@ -19,7 +19,8 @@ const Header = () => {
     const handleSignOut = async () => {
         try {
             await signOut(auth);
-            
+            // Կարող եք նաև այստեղ վերաուղղորդել օգտվողին դեպի գլխավոր էջ կամ մուտքի էջ
+            // navigate('/AMARANOC.git');
         } catch (error) {
             console.error("Error signing out:", error.message);
         }
@@ -56,9 +57,9 @@ const Header = () => {
                             <button onClick={handleSignOut} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
                                 Դուրս գալ
                             </button>
-                            <button onClick={handleSignOut} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
+                            <Link to={"/chat"} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
                                 Չատ
-                            </button>
+                            </Link>
                         </div>
                     ) : (
                         <Link to={"/login"} className="hidden lg:flex items-center gap-4 text-xl">
@@ -90,6 +91,10 @@ const Header = () => {
                                 <button onClick={handleSignOut} className="menu-item bg-orange-500 text-white rounded-md p-2 m-2">
                                     Դուրս գալ
                                 </button>
+                                
+                                <Link to={"/chat"} className="menu-item bg-orange-500 text-white rounded-md p-2 m-2">
+                                    Չատ
+                                </Link>
                             </>
                         ) : (
                             <Link id="login" className="menu-item" to="/login">Մուտք</Link>
