@@ -56,6 +56,9 @@ const Header = () => {
                             <button onClick={handleSignOut} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
                                 Դուրս գալ
                             </button>
+                            <button onClick={handleSignOut} className="px-3 py-1 bg-orange-500 text-white rounded-full hover:bg-orange-600 transition-colors">
+                                Չատ
+                            </button>
                         </div>
                     ) : (
                         <Link to={"/login"} className="hidden lg:flex items-center gap-4 text-xl">
