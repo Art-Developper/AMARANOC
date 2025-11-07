@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-// import SidebarFilters from "./SidebarFilters"; 
+import SidebarFilters from "./slidebarFilters";
 import { dbRealtime } from "../firebase"; 
 import { ref, get } from "firebase/database"; // Այս տողը պետք է լինի այսպես, սա է հիմնական լուծումը
 
