@@ -16,7 +16,8 @@ const firebaseConfig = {
   storageBucket: "amaranoc-a35ab.firebasestorage.app",
   messagingSenderId: "103884148399",
   appId: "1:103884148399:web:497edd0c96366f50c1ce5a",
-  measurementId: "G-JNQJWCFMN2"
+  measurementId: "G-JNQJWCFMN2",
+   databaseURL: "https://amaranoc-a35ab-default-rtdb.europe-west1.firebasedatabase.app/",
 };
 
 // Initialize Firebase
