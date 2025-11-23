@@ -4,7 +4,8 @@ import Home from './pages/HomePage';
 import ServicePage from './pages/ServicePage';
 import DiscountPage from './pages/DiscountPage';
 import ChatPage from './pages/Chat';
-import About from "./pages/AboutPage"
+import About from "./pages/AboutPage";
+import PropertyPage from "./components/PropertyPage";
 import Login from './components/Login';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path='/services' element={<ServicePage />}/>
         <Route path='/chat' element={<ChatPage />}/>
         <Route path='/login' element={<Login />} />
+        <Route path="/property/:id" element={<PropertyPage />} />
       </Routes>
     </BrowserRouter>
   );
