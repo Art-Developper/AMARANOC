@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ref, get } from "firebase/database";
+import { ref, get, push } from "firebase/database"; 
 import { dbRealtime } from "../firebase";
 
 import {
@@ -44,7 +44,6 @@ const PropertyPage = () => {
         <div className="relative">
             <div className="max-w-7xl mx-auto p-4 font-sans text-gray-700 mt-6 pb-24">
 
-                {/* --- HEADER --- */}
                 <div className="flex flex-col md:flex-row justify-between items-center border rounded-xl p-4 mb-6 shadow-sm bg-white">
                     <div className="flex items-center gap-2 mb-4 md:mb-0">
                         <FaMapMarkerAlt className="text-orange-500 w-6 h-6" />
@@ -63,7 +62,6 @@ const PropertyPage = () => {
                     </div>
                 </div>
 
-                {/* --- IMAGES --- */}
                 <div className="grid grid-cols-1 md:grid-cols-4 grid-rows-2 gap-4 h-[400px] md:h-[500px] mb-8 rounded-xl overflow-hidden">
                     <div className="col-span-1 md:col-span-2 row-span-2 relative group cursor-pointer">
                         <img src={images[0]} alt="Main" className="w-full h-full object-cover" />
@@ -76,9 +74,7 @@ const PropertyPage = () => {
                     ))}
                 </div>
 
-                {/* --- DETAILS & INFO GRID --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Left: Details */}
                     <div className="border border-gray-200 rounded-xl p-6 shadow-sm bg-white h-fit">
                         <h2 className="text-xl font-bold mb-6 text-gray-800">Հայտարարության մասին</h2>
                         <div className="space-y-4 text-sm">
@@ -93,7 +89,6 @@ const PropertyPage = () => {
                         </div>
                     </div>
 
-                    {/* Right: Description */}
                     <div className="border border-gray-200 rounded-xl p-6 shadow-sm bg-gray-50/50 h-fit">
                         <h3 className="text-lg font-bold mb-4 text-gray-800">Ընդհանուր նկարագրություն</h3>
                         <p className="text-sm text-gray-800 mb-4 font-medium leading-relaxed">
@@ -113,7 +108,6 @@ const PropertyPage = () => {
                     </div>
                 </div>
 
-                {/* --- AMENITIES --- */}
                 <div className="border border-gray-200 rounded-xl p-8 shadow-sm mb-8 bg-white">
                     <h3 className="text-lg font-bold mb-8 text-gray-800">Առավելություններ</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -127,7 +121,6 @@ const PropertyPage = () => {
 
             </div>
 
-            {/* --- STICKY BOOKING BAR --- */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-2xl flex justify-between items-center z-40 max-w-7xl mx-auto md:rounded-t-xl">
                 <div className="flex flex-col">
                     <span className="text-sm text-gray-500">Ընդամենը</span>
@@ -141,10 +134,12 @@ const PropertyPage = () => {
                 </button>
             </div>
 
-            {/* --- BOOKING MODAL --- */}
             {isModalOpen && (
                 <BookingModal
                     basePrice={Number(property.price)}
+                    allowOvernight={!!property.isSleep} 
+                    propertyId={id} 
+                    propertyName={property.addres}
                     onClose={() => setIsModalOpen(false)}
                 />
             )}
@@ -152,51 +147,68 @@ const PropertyPage = () => {
     );
 };
 
-/* --- ԱՄՐԱԳՐՄԱՆ MODAL ԿՈՄՊՈՆԵՆՏ --- */
-const BookingModal = ({ basePrice, onClose }) => {
-    const [step, setStep] = useState(1);
+
+const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onClose }) => {
     const [guests, setGuests] = useState(2);
     const [isOvernight, setIsOvernight] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null });
     const [clientInfo, setClientInfo] = useState({ name: '', phone: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Հաշվարկներ
+
     const overnightFee = 20000;
-    const finalDailyPrice = basePrice + (isOvernight ? overnightFee : 0);
 
-    // Օրերի հաշվարկ
+    const finalDailyPrice = basePrice + ((isOvernight && allowOvernight) ? overnightFee : 0);
+
     const calculateDays = () => {
         if (!dateRange.start || !dateRange.end) return 0;
         const diffTime = Math.abs(dateRange.end - dateRange.start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays === 0 ? 1 : diffDays; // Եթե նույն օրն է, հաշվում ենք 1 օր
+        return diffDays === 0 ? 1 : diffDays;
     };
 
     const daysCount = calculateDays();
     const totalPrice = finalDailyPrice * (daysCount || 1);
 
-    const handleBooking = (e) => {
+    const handleBooking = async (e) => {
         e.preventDefault();
-        // Այստեղ պետք է ուղարկել տվյալները Firebase կամ backend
+        setIsSubmitting(true);
+
         const orderData = {
+            propertyId,
+            propertyName,
             guests,
-            isOvernight,
-            checkIn: dateRange.start ? dateRange.start.toLocaleDateString('hy-AM') : '',
-            checkOut: dateRange.end ? dateRange.end.toLocaleDateString('hy-AM') : '',
+            isOvernight: allowOvernight ? isOvernight : false, 
+            checkIn: dateRange.start ? dateRange.start.toISOString() : '',
+            checkOut: dateRange.end ? dateRange.end.toISOString() : '',
+            checkInReadable: dateRange.start ? dateRange.start.toLocaleDateString('hy-AM') : '',
+            checkOutReadable: dateRange.end ? dateRange.end.toLocaleDateString('hy-AM') : '',
+            daysCount: daysCount || 1,
             totalPrice,
-            client: clientInfo
+            clientName: clientInfo.name,
+            clientPhone: clientInfo.phone,
+            createdAt: new Date().toISOString(),
+            status: "new" 
         };
 
-        console.log("Պատվերի տվյալներ:", orderData);
-        alert(`Շնորհակալություն ${clientInfo.name}, Ձեր հայտը ընդունված է:\nԸնդհանուր: ${totalPrice.toLocaleString()} ֏`);
-        onClose();
+        try {
+            const ordersRef = ref(dbRealtime, 'orders');
+            await push(ordersRef, orderData);
+
+            alert(`Շնորհակալություն ${clientInfo.name}, Ձեր հայտը հաջողությամբ գրանցվեց:\nԸնդհանուր: ${totalPrice.toLocaleString()} ֏`);
+            onClose();
+        } catch (error) {
+            console.error("Error saving booking:", error);
+            alert("Տեղի ունեցավ սխալ: Խնդրում ենք փորձել կրկին:");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
             <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col">
 
-                {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b">
                     <h3 className="text-xl font-bold text-gray-800">Ամրագրում</h3>
                     <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">
@@ -206,7 +218,7 @@ const BookingModal = ({ basePrice, onClose }) => {
 
                 <div className="p-6 space-y-6">
 
-                    {/* 1. Քանակ և Տեսակ */}
+
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Հյուրերի քանակ</label>
@@ -217,21 +229,23 @@ const BookingModal = ({ basePrice, onClose }) => {
                             </div>
                         </div>
 
-                        <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-orange-50 transition border-orange-100 bg-orange-50/30">
-                            <input
-                                type="checkbox"
-                                checked={isOvernight}
-                                onChange={(e) => setIsOvernight(e.target.checked)}
-                                className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
-                            />
-                            <div className="flex flex-col">
-                                <span className="font-semibold text-gray-800">Գիշերակացով (+{overnightFee.toLocaleString()} ֏)</span>
-                                <span className="text-xs text-gray-500">Ավելանում է օրավարձին</span>
-                            </div>
-                        </label>
+                        {allowOvernight && (
+                            <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-orange-50 transition border-orange-100 bg-orange-50/30">
+                                <input
+                                    type="checkbox"
+                                    checked={isOvernight}
+                                    onChange={(e) => setIsOvernight(e.target.checked)}
+                                    className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
+                                />
+                                <div className="flex flex-col">
+                                    <span className="font-semibold text-gray-800">Գիշերակացով (+{overnightFee.toLocaleString()} ֏)</span>
+                                    <span className="text-xs text-gray-500">Ավելանում է օրավարձին</span>
+                                </div>
+                            </label>
+                        )}
                     </div>
 
-                    {/* 2. Օրացույց */}
+
                     <div className="border-t pt-4">
                         <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                             <FaCalendarAlt className="text-orange-500" /> Ընտրեք օրերը
@@ -245,7 +259,6 @@ const BookingModal = ({ basePrice, onClose }) => {
                         </div>
                     </div>
 
-                    {/* 3. Տվյալներ */}
                     <div className="border-t pt-4 space-y-3">
                         <label className="block text-sm font-semibold text-gray-700">Ձեր տվյալները</label>
                         <input
@@ -265,7 +278,6 @@ const BookingModal = ({ basePrice, onClose }) => {
                     </div>
                 </div>
 
-                {/* Footer / Total */}
                 <div className="p-4 border-t bg-gray-50 mt-auto">
                     <div className="flex justify-between items-center mb-4">
                         <span className="text-gray-600">Ընդհանուր ({daysCount} օր)</span>
@@ -273,10 +285,10 @@ const BookingModal = ({ basePrice, onClose }) => {
                     </div>
                     <button
                         onClick={handleBooking}
-                        disabled={!dateRange.start || !clientInfo.name || !clientInfo.phone}
-                        className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition shadow-md"
+                        disabled={!dateRange.start || !clientInfo.name || !clientInfo.phone || isSubmitting}
+                        className={`w-full text-white font-bold py-3 rounded-xl transition shadow-md ${isSubmitting ? 'bg-gray-400' : 'bg-orange-600 hover:bg-orange-700'}`}
                     >
-                        Հաստատել ամրագրումը
+                        {isSubmitting ? 'Գրանցվում է...' : 'Հաստատել ամրագրումը'}
                     </button>
                 </div>
             </div>
@@ -284,7 +296,7 @@ const BookingModal = ({ basePrice, onClose }) => {
     );
 };
 
-/* --- ԸՆՏՐՈՎԻ ՕՐԱՑՈՒՅՑԻ ԿՈՄՊՈՆԵՆՏ --- */
+
 const SelectableCalendar = ({ dateRange, setDateRange }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const months = ["ՀՈՒՆՎԱՐ", "ՓԵՏՐՎԱՐ", "ՄԱՐՏ", "ԱՊՐԻԼ", "ՄԱՅԻՍ", "ՀՈՒՆԻՍ", "ՀՈՒԼԻՍ", "ՕԳՈՍՏՈՍ", "ՍԵՊՏԵՄԲԵՐ", "ՀՈԿՏԵՄԲԵՐ", "ՆՈՅԵՄԲԵՐ", "ԴԵԿՏԵՄԲԵՐ"];
@@ -301,16 +313,12 @@ const SelectableCalendar = ({ dateRange, setDateRange }) => {
 
     const handleDateClick = (day) => {
         const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-
-        // Տրամաբանություն.
-        // 1. Եթե ոչինչ ընտրված չէ -> Սահմանել Սկիզբ
-        // 2. Եթե Սկիզբը կա, բայց Ավարտը չկա -> Սահմանել Ավարտ (եթե ամսաթիվը սկզբից հետո է)
-        // 3. Եթե երկուսն էլ կան -> Զրոյացնել և սահմանել նոր Սկիզբ
+        selectedDate.setHours(0, 0, 0, 0);
 
         if (!dateRange.start || (dateRange.start && dateRange.end)) {
             setDateRange({ start: selectedDate, end: null });
         } else if (selectedDate < dateRange.start) {
-            setDateRange({ start: selectedDate, end: null }); // Եթե ընտրել է նախորդ օրը, դա դառնում է նոր սկիզբ
+            setDateRange({ start: selectedDate, end: null });
         } else {
             setDateRange({ ...dateRange, end: selectedDate });
         }
@@ -319,8 +327,8 @@ const SelectableCalendar = ({ dateRange, setDateRange }) => {
     const isSelected = (day) => {
         if (!dateRange.start) return false;
         const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        checkDate.setHours(0, 0, 0, 0);
 
-        // Ստուգում ենք` արդյոք հենց այս օրն է ընտրված (start կամ end)
         const isStart = checkDate.getTime() === dateRange.start.getTime();
         const isEnd = dateRange.end && checkDate.getTime() === dateRange.end.getTime();
         return isStart || isEnd;
@@ -329,6 +337,7 @@ const SelectableCalendar = ({ dateRange, setDateRange }) => {
     const isInRange = (day) => {
         if (!dateRange.start || !dateRange.end) return false;
         const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        checkDate.setHours(0, 0, 0, 0);
         return checkDate > dateRange.start && checkDate < dateRange.end;
     };
 
@@ -375,7 +384,7 @@ const SelectableCalendar = ({ dateRange, setDateRange }) => {
     );
 };
 
-/* --- ՕԺԱՆԴԱԿ --- */
+
 const DetailRow = ({ label, value, icon }) => (
     <div className="flex justify-between items-center border-b border-dashed border-gray-200 pb-2 last:border-0">
         <div className="flex items-center gap-2 text-gray-500 font-medium">
