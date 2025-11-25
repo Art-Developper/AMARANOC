@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import Header from "./Header"
 import { useParams } from 'react-router-dom';
-import { ref, get, push } from "firebase/database"; 
+import { ref, get, push } from "firebase/database";
 import { dbRealtime } from "../firebase";
 
 import {
@@ -40,7 +41,8 @@ const PropertyPage = () => {
 
     const hasAmenity = (name) => property.advantages && property.advantages.includes(name);
 
-    return (
+    return (<>
+        <Header />
         <div className="relative">
             <div className="max-w-7xl mx-auto p-4 font-sans text-gray-700 mt-6 pb-24">
 
@@ -80,10 +82,20 @@ const PropertyPage = () => {
                         <div className="space-y-4 text-sm">
                             <DetailRow label="# Կոդ" value={property.code || id.substring(0, 6).toUpperCase()} />
                             <DetailRow label="Հասցե" value={property.addres} icon={<FaMapMarkerAlt size={16} />} />
-                            <DetailRow label="Գիշերակաց" value={property.isSleep ? "Այո" : "Ոչ"} icon={<FaMoon size={16} />} />
+                            <DetailRow label="Գիշերակաց" value={property.overnightStay ? "Այո" : "Ոչ"} icon={<FaMoon size={16} />} />
                             <DetailRow label="Շինության մակերես" value={property.area ? `${property.area} քմ` : "-"} icon={<FaExpandArrowsAlt size={16} />} />
                             <DetailRow label="Մարդկանց թույլատրելի քանակ" value={property.peopleCaunt} icon={<FaUsers size={16} />} />
-                            <DetailRow label="Սենյակների քանակ" value={property.rooms || 1} icon={<FaBed size={16} />} />
+
+                            {property.isSleep && (
+                                <DetailRow
+                                    label="Գիշերակացով մարդկանց քանակ"
+                                    value={property.peopleSleepCaunt || "-"}
+                                    icon={<FaUsers size={16} className="text-orange-500" />}
+                                />
+                            )}
+
+                            <DetailRow label="Սենյակների քանակ" value={property.numberOfRooms || 1} icon={<FaBed size={16} />} />
+
                             <DetailRow label="Սանհանգույցների քանակ" value={property.tualets || 1} icon={<FaBath size={16} />} />
                             <DetailRow label="Լողավազան" value={property.baseyn === 'yes' ? "Առկա է" : "Առանց լողավազանի"} icon={<FaSwimmingPool size={16} />} />
                         </div>
@@ -137,28 +149,27 @@ const PropertyPage = () => {
             {isModalOpen && (
                 <BookingModal
                     basePrice={Number(property.price)}
-                    allowOvernight={!!property.isSleep} 
-                    propertyId={id} 
+                    allowOvernight={!!property.isSleep}
+                    overnightPrice={Number(property.overnightStay || 0)}
+                    propertyId={id}
                     propertyName={property.addres}
                     onClose={() => setIsModalOpen(false)}
                 />
             )}
         </div>
+    </>
     );
 };
 
 
-const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onClose }) => {
+const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, propertyName, onClose }) => {
     const [guests, setGuests] = useState(2);
     const [isOvernight, setIsOvernight] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null });
     const [clientInfo, setClientInfo] = useState({ name: '', phone: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-
-    const overnightFee = 20000;
-
-    const finalDailyPrice = basePrice + ((isOvernight && allowOvernight) ? overnightFee : 0);
+    const finalDailyPrice = basePrice + ((isOvernight && allowOvernight) ? overnightPrice : 0);
 
     const calculateDays = () => {
         if (!dateRange.start || !dateRange.end) return 0;
@@ -178,7 +189,7 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
             propertyId,
             propertyName,
             guests,
-            isOvernight: allowOvernight ? isOvernight : false, 
+            isOvernight: allowOvernight ? isOvernight : false,
             checkIn: dateRange.start ? dateRange.start.toISOString() : '',
             checkOut: dateRange.end ? dateRange.end.toISOString() : '',
             checkInReadable: dateRange.start ? dateRange.start.toLocaleDateString('hy-AM') : '',
@@ -188,7 +199,7 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
             clientName: clientInfo.name,
             clientPhone: clientInfo.phone,
             createdAt: new Date().toISOString(),
-            status: "new" 
+            status: "new"
         };
 
         try {
@@ -218,7 +229,6 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
 
                 <div className="p-6 space-y-6">
 
-
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Հյուրերի քանակ</label>
@@ -238,7 +248,7 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
                                     className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
                                 />
                                 <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-800">Գիշերակացով (+{overnightFee.toLocaleString()} ֏)</span>
+                                    <span className="font-semibold text-gray-800">Գիշերակացով (+{overnightPrice.toLocaleString()} ֏)</span>
                                     <span className="text-xs text-gray-500">Ավելանում է օրավարձին</span>
                                 </div>
                             </label>

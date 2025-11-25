@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 import SidebarFilters from "./slidebarFilters";
 import { dbRealtime } from "../firebase";
 import { ref, get } from "firebase/database";
-
-import { FaMapMarkerAlt, FaUsers, FaStar } from "react-icons/fa";
+import { FaMapMarkerAlt, FaUsers, FaStar, FaFilter, FaTimes } from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -14,6 +13,9 @@ import "swiper/css/pagination";
 export default function Home() {
     const [properties, setProperties] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
+    
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
     const [filters, setFilters] = useState({
         regions: [],
         minPrice: 0,
@@ -131,9 +133,10 @@ export default function Home() {
     }, [filteredProperties, currentPage]);
 
     return (
-        <div className="p-8 bg-white min-h-screen">
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
-                <div className="lg:w-1/4">
+        <div className="p-4 md:p-8 bg-white min-h-screen">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 relative">
+                
+                <div className="hidden lg:block lg:w-1/4 sticky top-4 h-fit">
                     <SidebarFilters
                         filters={filters}
                         setFilters={setFilters}
@@ -143,12 +146,48 @@ export default function Home() {
                     />
                 </div>
 
+                {isFilterOpen && (
+                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden flex justify-end animate-fadeIn">
+                        <div className="w-[85%] sm:w-[60%] bg-white h-full p-6 overflow-y-auto shadow-2xl relative">
+                            <button 
+                                onClick={() => setIsFilterOpen(false)} 
+                                className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
+                            >
+                                <FaTimes className="text-gray-600" />
+                            </button>
+                            <div className="mt-8">
+                                <SidebarFilters
+                                    filters={filters}
+                                    setFilters={setFilters}
+                                    homes={properties}
+                                    regionsList={regionsList}
+                                    resetFilters={resetFilters}
+                                />
+                                <button 
+                                    onClick={() => setIsFilterOpen(false)}
+                                    className="w-full mt-6 bg-orange-600 text-white py-3 rounded-xl font-bold"
+                                >
+                                    Տեսնել արդյունքները
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex-1">
-                    <div className="mb-6 flex items-center justify-between">
-                        <h1 className="text-3xl font-extrabold text-orange-700">Մեր բացառիկ առաջարկները</h1>
+                    <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-orange-700">Մեր առաջարկները</h1>
+                        
+                        <button 
+                            onClick={() => setIsFilterOpen(true)}
+                            className="lg:hidden flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-6 py-3 rounded-xl shadow-sm hover:bg-orange-50 font-semibold w-full sm:w-auto justify-center"
+                        >
+                            <FaFilter />
+                            Ֆիլտրել
+                        </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                         {filteredProperties.length === 0 && (
                             <div className="col-span-full text-center text-orange-400 mt-12 text-lg">
                                 Ցավոք, այս պահին համապատասխան արդյունքներ չկան։
@@ -159,14 +198,14 @@ export default function Home() {
                             <Link
                                 to={`/property/${p.id}`}
                                 key={p.id || idx}
-                                className="bg-white rounded-3xl shadow-xl overflow-hidden transition hover:shadow-2xl duration-400 border border-orange-200"
+                                className="bg-white rounded-3xl shadow-lg hover:shadow-2xl overflow-hidden transition-all duration-300 border border-orange-100 flex flex-col h-full"
                             >
                                 <div className="relative">
                                     <Swiper
                                         navigation
                                         pagination={{ clickable: true }}
                                         modules={[Navigation, Pagination]}
-                                        className="h-64 rounded-t-3xl"
+                                        className="h-56 md:h-64 rounded-t-3xl"
                                     >
                                         {p.images.length ? (
                                             p.images.map((img, i) => (
@@ -174,13 +213,13 @@ export default function Home() {
                                                     <img
                                                         src={img}
                                                         alt={p.address}
-                                                        className="w-full h-64 object-cover"
+                                                        className="w-full h-full object-cover"
                                                     />
                                                 </SwiperSlide>
                                             ))
                                         ) : (
                                             <SwiperSlide>
-                                                <div className="w-full h-64 bg-gray-100 flex items-center justify-center text-gray-300 text-xl font-medium">
+                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300 text-xl font-medium">
                                                     Նկար չկա
                                                 </div>
                                             </SwiperSlide>
@@ -188,27 +227,27 @@ export default function Home() {
                                     </Swiper>
                                 </div>
 
-                                <div className="p-5">
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex justify-center gap-4 items-center">
-                                            <span className="flex items-center gap-1 text-gray-700 text-base">
-                                                <FaMapMarkerAlt className="text-orange-500 text-lg" /> {p.address}
+                                <div className="p-5 flex flex-col flex-1">
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="flex items-center gap-1 text-gray-800 font-bold text-sm md:text-base line-clamp-1">
+                                                <FaMapMarkerAlt className="text-orange-500" /> {p.address}
                                             </span>
-
-                                            <span className="flex items-center gap-1 text-gray-500 text-base">
-                                                <FaUsers className="text-gray-400 text-lg" /> {p.maxGuestsDay}
+                                            <span className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
+                                                <FaUsers className="text-gray-400" /> {p.maxGuestsDay} հյուր
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center gap-1 bg-orange-600 text-white px-3 py-1 rounded-xl text-md font-semibold">
-                                            <FaStar className="text-white" /> {p.rating || 0}
+                                        <div className="flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-sm font-bold">
+                                            <FaStar /> {p.rating || 0}
                                         </div>
                                     </div>
 
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <div className="text-2xl font-bold text-orange-700 transition">
+                                    <div className="mt-auto pt-4 border-t border-dashed border-gray-200 flex items-center justify-between">
+                                        <div className="text-xl md:text-2xl font-bold text-orange-600">
                                             {Number(p.price || 0).toLocaleString()} ֏
                                         </div>
+                                        <span className="text-xs text-gray-400">օրավարձ</span>
                                     </div>
                                 </div>
                             </Link>
@@ -216,11 +255,11 @@ export default function Home() {
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="flex justify-center items-center gap-4 mt-12">
+                        <div className="flex justify-center items-center gap-2 md:gap-4 mt-12 flex-wrap">
                             <button
                                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                                 disabled={currentPage === 1}
-                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
+                                className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold text-sm md:text-base"
                             >
                                 ← Նախորդ
                             </button>
@@ -229,7 +268,7 @@ export default function Home() {
                                 <button
                                     key={i}
                                     onClick={() => setCurrentPage(i + 1)}
-                                    className={`px-5 py-2 rounded-full text-lg ${currentPage === i + 1
+                                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${currentPage === i + 1
                                         ? "bg-orange-600 text-white font-bold shadow-md"
                                         : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                                         }`}
@@ -241,7 +280,7 @@ export default function Home() {
                             <button
                                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                                 disabled={currentPage === totalPages}
-                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
+                                className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold text-sm md:text-base"
                             >
                                 Հաջորդ →
                             </button>
