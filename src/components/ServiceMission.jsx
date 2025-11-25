@@ -23,12 +23,12 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/hy-am';
 
 
-import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
-import KitchenIcon from '@mui/icons-material/Kitchen';
-import EventIcon from '@mui/icons-material/Event';
-import SettingsIcon from '@mui/icons-material/Settings';
-import AccessAlarmIcon from '@mui/icons-material/AccessAlarm';
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu'; 
+import TheaterComedyIcon from '@mui/icons-material/TheaterComedy'; 
+import CelebrationIcon from '@mui/icons-material/Celebration'; 
+import SpeakerGroupIcon from '@mui/icons-material/SpeakerGroup';
+import TableRestaurantIcon from '@mui/icons-material/TableRestaurant';
+import CameraAltIcon from '@mui/icons-material/CameraAlt'; 
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 
 
@@ -316,7 +316,6 @@ export default function ServiceMission() {
             phone: customerPhone,
         });
         setCurrentBookingStep(4);
-        // handleCloseBooking(); 
     };
 
     const currentServices = services[tabValue]
@@ -498,10 +497,14 @@ export default function ServiceMission() {
                     <TabList
                         onChange={handleTabChange}
                         aria-label="Ծառայությունների ցուցակ պատկերակներով"
+                        centered
+                        variant="scrollable"
+                        scrollButtons="auto"
+                        allowScrollButtonsMobile
                         sx={{
-                            display: 'flex',
-                            justifyContent: 'center',
-                            gap: { xs: 1, sm: 2, md: 4 },
+                            '& .MuiTabs-flexContainer': {
+                                justifyContent: 'center'
+                            },
                             '& .MuiTabs-indicator': {
                                 backgroundColor: 'orange',
                             },
@@ -513,10 +516,10 @@ export default function ServiceMission() {
                         }}
                     >
                         <Tab label="Սպասարկում" value="1" icon={<RestaurantMenuIcon />} iconPosition="top" />
-                        <Tab label="Շոու" value="2" icon={<KitchenIcon />} iconPosition="top" />
-                        <Tab label="Միջոցառումներ" value="3" icon={<EventIcon />} iconPosition="top" />
-                        <Tab label="Տեխնիկա" value="4" icon={<SettingsIcon />} iconPosition="top" />
-                        <Tab label="Օրավարձով գույք" value="5" icon={<AccessAlarmIcon />} iconPosition="top" />
+                        <Tab label="Շոու" value="2" icon={<TheaterComedyIcon />} iconPosition="top" />
+                        <Tab label="Միջոցառումներ" value="3" icon={<CelebrationIcon />} iconPosition="top" />
+                        <Tab label="Տեխնիկա" value="4" icon={<SpeakerGroupIcon />} iconPosition="top" />
+                        <Tab label="Օրավարձով գույք" value="5" icon={<TableRestaurantIcon />} iconPosition="top" />
                         <Tab label="Նկարահանում" value="6" icon={<CameraAltIcon />} iconPosition="top" />
                     </TabList>
                 </Box>
