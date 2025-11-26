@@ -3,18 +3,38 @@ import { Link } from "react-router-dom";
 import SidebarFilters from "./slidebarFilters";
 import { dbRealtime } from "../firebase";
 import { ref, get } from "firebase/database";
-import { FaMapMarkerAlt, FaUsers, FaStar, FaFilter, FaTimes } from "react-icons/fa";
+import { 
+    FaMapMarkerAlt, 
+    FaUsers, 
+    FaStar, 
+    FaFilter, 
+    FaTimes, 
+    FaCalendarAlt, 
+    FaChevronLeft, 
+    FaChevronRight 
+} from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import hy from 'date-fns/locale/hy';
+
+
+registerLocale('hy', hy);
 
 export default function Home() {
+
     const [properties, setProperties] = useState([]);
+    const [filteredProperties, setFilteredProperties] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(null);
 
     const [filters, setFilters] = useState({
         regions: [],
@@ -29,8 +49,6 @@ export default function Home() {
         amenities: [],
         rating: null
     });
-
-    const [filteredProperties, setFilteredProperties] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -102,6 +120,7 @@ export default function Home() {
             data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
         }
         setFilteredProperties(data);
+        setCurrentPage(1); 
     }, [filters, properties]);
 
     const regionsList = useMemo(() => {
@@ -125,6 +144,7 @@ export default function Home() {
         });
     };
 
+   
     const totalPages = Math.ceil(filteredProperties.length / 10);
     const paginatedProperties = useMemo(() => {
         const start = (currentPage - 1) * 10;
@@ -133,9 +153,182 @@ export default function Home() {
     }, [filteredProperties, currentPage]);
 
     return (
-        <div className="p-4 md:p-8 bg-white min-h-screen">
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 relative">
+        <div className="p-4 md:p-8 bg-white min-h-screen font-sans">
+            
+        
+            <style>{`
+                /* DatePicker Container */
+                .custom-datepicker {
+                    font-family: inherit;
+                    border: none !important;
+                    width: 100%;
+                }
+                .react-datepicker {
+                    border: none !important;
+                    width: 100% !important; /* Լրիվ լայնություն */
+                    font-family: inherit;
+                    display: block;
+                }
+                .react-datepicker__header {
+                    background-color: transparent !important;
+                    border-bottom: none !important;
+                    padding-top: 0;
+                    width: 100%;
+                }
+                .react-datepicker__month-container {
+                    width: 100%;
+                    float: none !important; /* Հանում ենք float-ը */
+                }
+                .react-datepicker__month {
+                    margin: 0;
+                    padding: 10px 0;
+                }
+                .react-datepicker__triangle {
+                    display: none;
+                }
                 
+                /* --- ԱՅՍ ՄԱՍԸ ԿԱՐԵՎՈՐ Է ՄԵՋՏԵՂ ԲԵՐԵԼՈՒ ՀԱՄԱՐ --- */
+                .react-datepicker__week, 
+                .react-datepicker__day-names {
+                    display: flex;
+                    justify-content: center; /* Տողերը բերում է մեջտեղ */
+                    align-items: center;
+                }
+
+                /* Շաբաթվա օրերի անունները */
+                .react-datepicker__day-name {
+                    width: 2.5rem;
+                    line-height: 2.5rem;
+                    font-weight: 600;
+                    color: #333;
+                    text-transform: capitalize;
+                    margin: 2px; /* Փոքր հեռավորություն */
+                    text-align: center;
+                }
+                /* Շաբաթ (6-րդ) և Կիրակի (7-րդ) օրերը նարնջագույն */
+                .react-datepicker__day-name:nth-child(6),
+                .react-datepicker__day-name:nth-child(7) {
+                    color: #f97316 !important; 
+                }
+                
+                /* Օրերը (թվերը) */
+                .react-datepicker__day {
+                    width: 2.5rem;
+                    line-height: 2.5rem;
+                    margin: 2px;
+                    color: #4b5563; 
+                    font-weight: 500;
+                    text-align: center;
+                }
+                .react-datepicker__day:hover {
+                    border-radius: 50%;
+                    background-color: #f3f4f6;
+                }
+                /* Ընտրված օրը */
+                .react-datepicker__day--selected {
+                    background-color: #f97316 !important;
+                    border-radius: 50% !important;
+                    color: white !important;
+                }
+                .react-datepicker__day--keyboard-selected {
+                    background-color: transparent;
+                    color: inherit;
+                }
+                .react-datepicker__day--keyboard-selected.react-datepicker__day--selected {
+                     background-color: #f97316 !important;
+                     color: white !important;
+                }
+
+                /* Անցյալի օրերը */
+                .react-datepicker__day--disabled {
+                    color: #d1d5db !important;
+                }
+            `}</style>
+
+            {isCalendarOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[380px] overflow-hidden animate-fadeIn">
+                        
+                       
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                            <h2 className="text-lg font-bold text-gray-900">
+                                Նշեք Ձեր ցանկալի օրերը
+                            </h2>
+                            <button 
+                                onClick={() => setIsCalendarOpen(false)}
+                                className="text-gray-400 hover:text-gray-800 transition"
+                            >
+                                <FaTimes size={18} />
+                            </button>
+                        </div>
+
+                        <div className="w-full flex justify-center py-2">
+                            <DatePicker
+                                selected={selectedDate}
+                                onChange={(date) => setSelectedDate(date)}
+                                minDate={new Date()}
+                                inline
+                                locale="hy"
+                                calendarClassName="custom-datepicker"
+                                renderCustomHeader={({
+                                    date,
+                                    decreaseMonth,
+                                    increaseMonth,
+                                    prevMonthButtonDisabled,
+                                    nextMonthButtonDisabled,
+                                }) => (
+                                    <div className="bg-[#f58a2e] text-white flex items-center justify-between px-4 py-3 mb-2">
+                                        <button 
+                                            onClick={decreaseMonth} 
+                                            disabled={prevMonthButtonDisabled}
+                                            className="hover:bg-white/20 p-1.5 rounded transition disabled:opacity-50"
+                                        >
+                                            <FaChevronLeft size={14} />
+                                        </button>
+
+                                        <span className="text-lg font-bold uppercase tracking-wider">
+                                            {date.toLocaleString('hy-AM', { month: 'long' })}
+                                        </span>
+
+                                        <button 
+                                            onClick={increaseMonth} 
+                                            disabled={nextMonthButtonDisabled}
+                                            className="hover:bg-white/20 p-1.5 rounded transition disabled:opacity-50"
+                                        >
+                                            <FaChevronRight size={14} />
+                                        </button>
+                                    </div>
+                                )}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 p-5 pt-0">
+                            <button 
+                                onClick={() => setIsCalendarOpen(false)}
+                                className="text-gray-600 font-semibold text-sm px-4 py-2 hover:bg-gray-50 rounded-lg transition"
+                            >
+                                Փակել
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setIsCalendarOpen(false);
+                                    console.log(selectedDate);
+                                }}
+                                className={`px-6 py-2.5 rounded-full font-semibold text-sm transition shadow-sm ${
+                                    selectedDate 
+                                    ? "bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200" 
+                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                }`}
+                                disabled={!selectedDate}
+                            >
+                                Հաստատել
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 relative">
                 <div className="hidden lg:block lg:w-1/4 sticky top-4 h-fit">
                     <SidebarFilters
                         filters={filters}
@@ -175,6 +368,18 @@ export default function Home() {
                 )}
 
                 <div className="flex-1">
+                    
+
+                    <div className="mb-6">
+                        <button
+                            onClick={() => setIsCalendarOpen(true)}
+                            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:-translate-y-0.5 font-semibold text-sm md:text-base"
+                        >
+                            <FaCalendarAlt />
+                            Ընտրել օրերը
+                        </button>
+                    </div>
+
                     <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <h1 className="text-2xl md:text-3xl font-extrabold text-orange-700">Մեր առաջարկները</h1>
                         
