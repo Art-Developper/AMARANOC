@@ -19,8 +19,6 @@ const Header = () => {
     const handleSignOut = async () => {
         try {
             await signOut(auth);
-            // Կարող եք նաև այստեղ վերաուղղորդել օգտվողին դեպի գլխավոր էջ կամ մուտքի էջ
-            // navigate('/AMARANOC.git');
         } catch (error) {
             console.error("Error signing out:", error.message);
         }
@@ -92,7 +90,7 @@ const Header = () => {
                                     Դուրս գալ
                                 </button>
                                 
-                                <Link to={"/chat"} className="menu-item bg-orange-500 text-white rounded-md p-2 m-2">
+                                <Link to={"/chat"} className="menu-item bg-orange-500 text-white text-center rounded-md p-2 m-2">
                                     Չատ
                                 </Link>
                             </>
@@ -101,18 +99,6 @@ const Header = () => {
                         )}
 
 
-                        <div className="custom-md:hidden mt-8 px-4 w-full">
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Որոնում..."
-                                    className="pl-4 pr-10 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-1 focus:ring-orange-500 w-full"
-                                />
-                                <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-orange-500">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                                </button>
-                            </div>
-                        </div>
                     </Menu>
                 </div>
             </div>

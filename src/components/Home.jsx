@@ -3,38 +3,18 @@ import { Link } from "react-router-dom";
 import SidebarFilters from "./slidebarFilters";
 import { dbRealtime } from "../firebase";
 import { ref, get } from "firebase/database";
-import { 
-    FaMapMarkerAlt, 
-    FaUsers, 
-    FaStar, 
-    FaFilter, 
-    FaTimes, 
-    FaCalendarAlt, 
-    FaChevronLeft, 
-    FaChevronRight 
-} from "react-icons/fa";
+import { FaMapMarkerAlt, FaUsers, FaStar, FaSearch, FaFilter, FaTimes } from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import DatePicker, { registerLocale } from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import hy from 'date-fns/locale/hy';
-
-
-registerLocale('hy', hy);
 
 export default function Home() {
-
     const [properties, setProperties] = useState([]);
-    const [filteredProperties, setFilteredProperties] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    
-    const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showFilters, setShowFilters] = useState(false);
 
     const [filters, setFilters] = useState({
         regions: [],
@@ -50,6 +30,8 @@ export default function Home() {
         rating: null
     });
 
+    const [filteredProperties, setFilteredProperties] = useState([]);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -57,7 +39,7 @@ export default function Home() {
                 if (snapshot.exists()) {
                     const dataObj = snapshot.val();
                     let items = Object.entries(dataObj).map(([id, p]) => ({
-                        id, 
+                        id,
                         ...p,
                         amenities: p.advantages || [],
                         images: p.images || [],
@@ -84,6 +66,16 @@ export default function Home() {
 
     useEffect(() => {
         let data = [...properties];
+
+        if (searchTerm.trim() !== "") {
+            const lowerTerm = searchTerm.toLowerCase();
+            data = data.filter(p =>
+                (p.address && p.address.toLowerCase().includes(lowerTerm)) ||
+                (p.price && p.price.toString().includes(lowerTerm)) ||
+                (p.id && p.id.toString().toLowerCase().includes(lowerTerm))
+            );
+        }
+
         if (filters.regions.length) {
             data = data.filter(p => filters.regions.includes(p.address));
         }
@@ -119,9 +111,10 @@ export default function Home() {
         if (filters.rating) {
             data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
         }
+
         setFilteredProperties(data);
-        setCurrentPage(1); 
-    }, [filters, properties]);
+        setCurrentPage(1);
+    }, [filters, properties, searchTerm]);
 
     const regionsList = useMemo(() => {
         const setR = new Set(properties.map(p => p.address).filter(Boolean));
@@ -142,9 +135,9 @@ export default function Home() {
             amenities: [],
             rating: null
         });
+        setSearchTerm("");
     };
 
-   
     const totalPages = Math.ceil(filteredProperties.length / 10);
     const paginatedProperties = useMemo(() => {
         const start = (currentPage - 1) * 10;
@@ -153,183 +146,33 @@ export default function Home() {
     }, [filteredProperties, currentPage]);
 
     return (
-        <div className="p-4 md:p-8 bg-white min-h-screen font-sans">
-            
-        
-            <style>{`
-                /* DatePicker Container */
-                .custom-datepicker {
-                    font-family: inherit;
-                    border: none !important;
-                    width: 100%;
-                }
-                .react-datepicker {
-                    border: none !important;
-                    width: 100% !important; /* Լրիվ լայնություն */
-                    font-family: inherit;
-                    display: block;
-                }
-                .react-datepicker__header {
-                    background-color: transparent !important;
-                    border-bottom: none !important;
-                    padding-top: 0;
-                    width: 100%;
-                }
-                .react-datepicker__month-container {
-                    width: 100%;
-                    float: none !important; /* Հանում ենք float-ը */
-                }
-                .react-datepicker__month {
-                    margin: 0;
-                    padding: 10px 0;
-                }
-                .react-datepicker__triangle {
-                    display: none;
-                }
-                
-                /* --- ԱՅՍ ՄԱՍԸ ԿԱՐԵՎՈՐ Է ՄԵՋՏԵՂ ԲԵՐԵԼՈՒ ՀԱՄԱՐ --- */
-                .react-datepicker__week, 
-                .react-datepicker__day-names {
-                    display: flex;
-                    justify-content: center; /* Տողերը բերում է մեջտեղ */
-                    align-items: center;
-                }
-
-                /* Շաբաթվա օրերի անունները */
-                .react-datepicker__day-name {
-                    width: 2.5rem;
-                    line-height: 2.5rem;
-                    font-weight: 600;
-                    color: #333;
-                    text-transform: capitalize;
-                    margin: 2px; /* Փոքր հեռավորություն */
-                    text-align: center;
-                }
-                /* Շաբաթ (6-րդ) և Կիրակի (7-րդ) օրերը նարնջագույն */
-                .react-datepicker__day-name:nth-child(6),
-                .react-datepicker__day-name:nth-child(7) {
-                    color: #f97316 !important; 
-                }
-                
-                /* Օրերը (թվերը) */
-                .react-datepicker__day {
-                    width: 2.5rem;
-                    line-height: 2.5rem;
-                    margin: 2px;
-                    color: #4b5563; 
-                    font-weight: 500;
-                    text-align: center;
-                }
-                .react-datepicker__day:hover {
-                    border-radius: 50%;
-                    background-color: #f3f4f6;
-                }
-                /* Ընտրված օրը */
-                .react-datepicker__day--selected {
-                    background-color: #f97316 !important;
-                    border-radius: 50% !important;
-                    color: white !important;
-                }
-                .react-datepicker__day--keyboard-selected {
-                    background-color: transparent;
-                    color: inherit;
-                }
-                .react-datepicker__day--keyboard-selected.react-datepicker__day--selected {
-                     background-color: #f97316 !important;
-                     color: white !important;
-                }
-
-                /* Անցյալի օրերը */
-                .react-datepicker__day--disabled {
-                    color: #d1d5db !important;
-                }
-            `}</style>
-
-            {isCalendarOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white rounded-[20px] shadow-2xl w-full max-w-[380px] overflow-hidden animate-fadeIn">
-                        
-                       
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-lg font-bold text-gray-900">
-                                Նշեք Ձեր ցանկալի օրերը
-                            </h2>
-                            <button 
-                                onClick={() => setIsCalendarOpen(false)}
-                                className="text-gray-400 hover:text-gray-800 transition"
-                            >
-                                <FaTimes size={18} />
-                            </button>
-                        </div>
-
-                        <div className="w-full flex justify-center py-2">
-                            <DatePicker
-                                selected={selectedDate}
-                                onChange={(date) => setSelectedDate(date)}
-                                minDate={new Date()}
-                                inline
-                                locale="hy"
-                                calendarClassName="custom-datepicker"
-                                renderCustomHeader={({
-                                    date,
-                                    decreaseMonth,
-                                    increaseMonth,
-                                    prevMonthButtonDisabled,
-                                    nextMonthButtonDisabled,
-                                }) => (
-                                    <div className="bg-[#f58a2e] text-white flex items-center justify-between px-4 py-3 mb-2">
-                                        <button 
-                                            onClick={decreaseMonth} 
-                                            disabled={prevMonthButtonDisabled}
-                                            className="hover:bg-white/20 p-1.5 rounded transition disabled:opacity-50"
-                                        >
-                                            <FaChevronLeft size={14} />
-                                        </button>
-
-                                        <span className="text-lg font-bold uppercase tracking-wider">
-                                            {date.toLocaleString('hy-AM', { month: 'long' })}
-                                        </span>
-
-                                        <button 
-                                            onClick={increaseMonth} 
-                                            disabled={nextMonthButtonDisabled}
-                                            className="hover:bg-white/20 p-1.5 rounded transition disabled:opacity-50"
-                                        >
-                                            <FaChevronRight size={14} />
-                                        </button>
-                                    </div>
-                                )}
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-end gap-3 p-5 pt-0">
-                            <button 
-                                onClick={() => setIsCalendarOpen(false)}
-                                className="text-gray-600 font-semibold text-sm px-4 py-2 hover:bg-gray-50 rounded-lg transition"
-                            >
-                                Փակել
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    setIsCalendarOpen(false);
-                                    console.log(selectedDate);
-                                }}
-                                className={`px-6 py-2.5 rounded-full font-semibold text-sm transition shadow-sm ${
-                                    selectedDate 
-                                    ? "bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200" 
-                                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                }`}
-                                disabled={!selectedDate}
-                            >
-                                Հաստատել
-                            </button>
-                        </div>
+        <div className="p-4 md:p-8 bg-white min-h-screen relative">
+            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+                <div className={`
+                    fixed inset-0 z-50 bg-white p-6 overflow-y-auto transition-transform duration-300 ease-in-out
+                    ${showFilters ? "translate-x-0" : "-translate-x-full"}
+                    lg:static lg:translate-x-0 lg:w-1/4 lg:p-0 lg:bg-transparent lg:block lg:overflow-visible
+                `}>
+                    <div className="flex justify-between items-center mb-6 lg:hidden border-b pb-4 border-gray-100">
+                        <h2 className="text-xl font-bold text-orange-700">Որոնում և Ֆիլտրեր</h2>
+                        <button
+                            onClick={() => setShowFilters(false)}
+                            className="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200"
+                        >
+                            <FaTimes />
+                        </button>
                     </div>
-                </div>
-            )}
+                    <div className="relative w-full mb-6 lg:hidden">
+                        <input
+                            type="text"
+                            placeholder="Որոնել (հասցե, գին, ID)..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-orange-200 focus:border-orange-500 focus:outline-none shadow-sm text-gray-700"
+                        />
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400" />
+                    </div>
 
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 relative">
-                <div className="hidden lg:block lg:w-1/4 sticky top-4 h-fit">
                     <SidebarFilters
                         filters={filters}
                         setFilters={setFilters}
@@ -337,62 +180,51 @@ export default function Home() {
                         regionsList={regionsList}
                         resetFilters={resetFilters}
                     />
-                </div>
 
-                {isFilterOpen && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden flex justify-end animate-fadeIn">
-                        <div className="w-[85%] sm:w-[60%] bg-white h-full p-6 overflow-y-auto shadow-2xl relative">
-                            <button 
-                                onClick={() => setIsFilterOpen(false)} 
-                                className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
-                            >
-                                <FaTimes className="text-gray-600" />
-                            </button>
-                            <div className="mt-8">
-                                <SidebarFilters
-                                    filters={filters}
-                                    setFilters={setFilters}
-                                    homes={properties}
-                                    regionsList={regionsList}
-                                    resetFilters={resetFilters}
-                                />
-                                <button 
-                                    onClick={() => setIsFilterOpen(false)}
-                                    className="w-full mt-6 bg-orange-600 text-white py-3 rounded-xl font-bold"
-                                >
-                                    Տեսնել արդյունքները
-                                </button>
-                            </div>
-                        </div>
+                    <div className="mt-4 lg:hidden">
+                        <button
+                            onClick={() => setShowFilters(false)}
+                            className="w-full bg-orange-600 text-white py-3 rounded-xl font-bold shadow-lg"
+                        >
+                            Տեսնել արդյունքները
+                        </button>
                     </div>
+                </div>
+                {showFilters && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                        onClick={() => setShowFilters(false)}
+                    ></div>
                 )}
 
                 <div className="flex-1">
-                    
+                    <div className="mb-8 flex flex-col gap-4">
+                        <h1 className="text-3xl font-extrabold text-orange-700">
+                            Մեր առաջարկները
+                        </h1>
 
-                    <div className="mb-6">
-                        <button
-                            onClick={() => setIsCalendarOpen(true)}
-                            className="flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-xl shadow-md hover:shadow-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:-translate-y-0.5 font-semibold text-sm md:text-base"
-                        >
-                            <FaCalendarAlt />
-                            Ընտրել օրերը
-                        </button>
+                        <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+                            <div className="relative w-full hidden lg:block">
+                                <input
+                                    type="text"
+                                    placeholder="Որոնել (հասցե, գին, ID)..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-3 rounded-full border-2 border-orange-200 focus:border-orange-500 focus:outline-none shadow-sm text-gray-700"
+                                />
+                                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400" />
+                            </div>
+                            <button
+                                onClick={() => setShowFilters(true)}
+                                className="lg:hidden w-full flex items-center justify-center gap-2 px-6 py-3 bg-orange-100 text-orange-700 font-bold rounded-full hover:bg-orange-200 transition border border-orange-200 shadow-sm"
+                            >
+                                <FaSearch className="text-orange-600" />
+                                <span>Որոնում և Ֆիլտրեր</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <h1 className="text-2xl md:text-3xl font-extrabold text-orange-700">Մեր առաջարկները</h1>
-                        
-                        <button 
-                            onClick={() => setIsFilterOpen(true)}
-                            className="lg:hidden flex items-center gap-2 bg-white border border-orange-200 text-orange-700 px-6 py-3 rounded-xl shadow-sm hover:bg-orange-50 font-semibold w-full sm:w-auto justify-center"
-                        >
-                            <FaFilter />
-                            Ֆիլտրել
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredProperties.length === 0 && (
                             <div className="col-span-full text-center text-orange-400 mt-12 text-lg">
                                 Ցավոք, այս պահին համապատասխան արդյունքներ չկան։
@@ -403,14 +235,14 @@ export default function Home() {
                             <Link
                                 to={`/property/${p.id}`}
                                 key={p.id || idx}
-                                className="bg-white rounded-3xl shadow-lg hover:shadow-2xl overflow-hidden transition-all duration-300 border border-orange-100 flex flex-col h-full"
+                                className="bg-white rounded-3xl shadow-xl overflow-hidden transition hover:shadow-2xl duration-400 border border-orange-200 group"
                             >
                                 <div className="relative">
                                     <Swiper
                                         navigation
                                         pagination={{ clickable: true }}
                                         modules={[Navigation, Pagination]}
-                                        className="h-56 md:h-64 rounded-t-3xl"
+                                        className="h-64 rounded-t-3xl"
                                     >
                                         {p.images.length ? (
                                             p.images.map((img, i) => (
@@ -418,13 +250,13 @@ export default function Home() {
                                                     <img
                                                         src={img}
                                                         alt={p.address}
-                                                        className="w-full h-full object-cover"
+                                                        className="w-full h-64 object-cover"
                                                     />
                                                 </SwiperSlide>
                                             ))
                                         ) : (
                                             <SwiperSlide>
-                                                <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-300 text-xl font-medium">
+                                                <div className="w-full h-64 bg-gray-100 flex items-center justify-center text-gray-300 text-xl font-medium">
                                                     Նկար չկա
                                                 </div>
                                             </SwiperSlide>
@@ -432,27 +264,29 @@ export default function Home() {
                                     </Swiper>
                                 </div>
 
-                                <div className="p-5 flex flex-col flex-1">
-                                    <div className="flex items-start justify-between mb-2">
+                                <div className="p-5">
+                                    <div className="flex items-start justify-between">
                                         <div className="flex flex-col gap-1">
-                                            <span className="flex items-center gap-1 text-gray-800 font-bold text-sm md:text-base line-clamp-1">
-                                                <FaMapMarkerAlt className="text-orange-500" /> {p.address}
+                                            <span className="flex items-center gap-1 text-gray-700 text-base font-medium">
+                                                <FaMapMarkerAlt className="text-orange-500 text-lg" /> {p.address}
                                             </span>
-                                            <span className="flex items-center gap-2 text-gray-500 text-xs md:text-sm">
-                                                <FaUsers className="text-gray-400" /> {p.maxGuestsDay} հյուր
-                                            </span>
+
+                                            <div className="flex items-center gap-3 mt-1">
+                                                <span className="flex items-center gap-1 text-gray-500 text-sm">
+                                                    <FaUsers className="text-gray-400" /> {p.maxGuestsDay} հոգի
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1 bg-orange-100 text-orange-700 px-2 py-1 rounded-lg text-sm font-bold">
-                                            <FaStar /> {p.rating || 0}
+                                        <div className="flex items-center gap-1 bg-orange-600 text-white px-3 py-1 rounded-xl text-md font-semibold shadow-md">
+                                            <FaStar className="text-white" /> {p.rating || 0}
                                         </div>
                                     </div>
 
-                                    <div className="mt-auto pt-4 border-t border-dashed border-gray-200 flex items-center justify-between">
-                                        <div className="text-xl md:text-2xl font-bold text-orange-600">
+                                    <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                                        <div className="text-2xl font-bold text-orange-700 transition group-hover:scale-105">
                                             {Number(p.price || 0).toLocaleString()} ֏
                                         </div>
-                                        <span className="text-xs text-gray-400">օրավարձ</span>
                                     </div>
                                 </div>
                             </Link>
@@ -460,11 +294,11 @@ export default function Home() {
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="flex justify-center items-center gap-2 md:gap-4 mt-12 flex-wrap">
+                        <div className="flex justify-center items-center gap-4 mt-12">
                             <button
                                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                                 disabled={currentPage === 1}
-                                className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold text-sm md:text-base"
+                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
                             >
                                 ← Նախորդ
                             </button>
@@ -473,8 +307,8 @@ export default function Home() {
                                 <button
                                     key={i}
                                     onClick={() => setCurrentPage(i + 1)}
-                                    className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-base ${currentPage === i + 1
-                                        ? "bg-orange-600 text-white font-bold shadow-md"
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${currentPage === i + 1
+                                        ? "bg-orange-600 text-white font-bold shadow-lg scale-110"
                                         : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                                         }`}
                                 >
@@ -485,7 +319,7 @@ export default function Home() {
                             <button
                                 onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-2 md:px-4 md:py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold text-sm md:text-base"
+                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
                             >
                                 Հաջորդ →
                             </button>
