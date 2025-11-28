@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import logo from "../assets/img/logo.svg";
 import { Link } from "react-router-dom";
-import { FaUser } from 'react-icons/fa';
+import { FaUser, FaGlobe } from 'react-icons/fa';
 import { slide as Menu } from 'react-burger-menu';
 import { auth } from '../firebase';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 const Header = () => {
     const [user, setUser] = useState(null);
+    const [isLangOpen, setIsLangOpen] = useState(false);
+    const [notification, setNotification] = useState("");
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -23,9 +25,24 @@ const Header = () => {
             console.error("Error signing out:", error.message);
         }
     };
+    const handleLanguageSelect = (lang) => {
+        if (lang === 'ru' || lang === 'en') {
+            setNotification("Այս լեզուն դեռ ավելացված չէ");
+            setTimeout(() => {
+                setNotification("");
+            }, 3000);
+        }
+        setIsLangOpen(false); 
+    };
 
     return (
-        <header className="py-4 font-sans ">
+        <header className="py-4 font-sans relative">
+            {notification && (
+                <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[100] transition-opacity duration-300">
+                    {notification}
+                </div>
+            )}
+
             <div className="container mx-auto flex items-center justify-between px-4">
 
                 <Link to={"/AMARANOC.git"} className="flex">
@@ -49,6 +66,37 @@ const Header = () => {
 
 
                 <div className="flex items-center gap-6">
+                    <div className="relative">
+                        <button 
+                            onClick={() => setIsLangOpen(!isLangOpen)} 
+                            className="flex items-center justify-center text-black hover:text-orange-500 transition-colors focus:outline-none"
+                        >
+                            <FaGlobe className="w-6 h-6" />
+                        </button>
+                        {isLangOpen && (
+                            <div className="absolute top-10 right-0 bg-white border border-gray-200 shadow-xl rounded-md w-32 py-2 z-50 flex flex-col">
+                                <button 
+                                    onClick={() => handleLanguageSelect('hy')} 
+                                    className="px-4 py-2 text-left hover:bg-orange-50 text-black hover:text-orange-500 transition-colors"
+                                >
+                                    Հայերեն
+                                </button>
+                                <button 
+                                    onClick={() => handleLanguageSelect('ru')} 
+                                    className="px-4 py-2 text-left hover:bg-orange-50 text-black hover:text-orange-500 transition-colors"
+                                >
+                                    Русский
+                                </button>
+                                <button 
+                                    onClick={() => handleLanguageSelect('en')} 
+                                    className="px-4 py-2 text-left hover:bg-orange-50 text-black hover:text-orange-500 transition-colors"
+                                >
+                                    English
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
                     {user ? (
                         <div className="hidden lg:flex items-center gap-4 text-sm">
                             <span className="text-black">{user.email}</span>
@@ -83,6 +131,12 @@ const Header = () => {
                         <Link id="about" className="menu-item" to="/discounts">Զեղչեր</Link>
                         <Link id="contact" className="menu-item" to="/services">Ծառայություններ</Link>
                         <Link id="about-us" className="menu-item" to="/about">Մեր Մասին</Link>
+                        <div className="flex gap-4 p-4 border-t border-gray-600 mt-4">
+                            <span onClick={() => handleLanguageSelect('hy')} className="text-white cursor-pointer hover:text-orange-500">Հայ</span>
+                            <span onClick={() => handleLanguageSelect('ru')} className="text-white cursor-pointer hover:text-orange-500">Рус</span>
+                            <span onClick={() => handleLanguageSelect('en')} className="text-white cursor-pointer hover:text-orange-500">Eng</span>
+                        </div>
+
                         {user ? (
                             <>
                                 <span className="menu-item text-white">{user.email}</span>

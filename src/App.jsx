@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/HomePage';
 import ServicePage from './pages/ServicePage';
@@ -8,11 +8,25 @@ import About from "./pages/AboutPage";
 import PropertyPage from "./components/PropertyPage";
 import Map from "./components/Map.jsx"
 import Login from './components/Login';
+import Loader from './components/Loader';
 
 function App() {
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 2500);
+
+    return () => clearTimeout(timer); 
+  }, []);
+
+  if (loading) {
+    return <Loader />;
+  }
+
   return (
     <BrowserRouter>
-
       <Routes>
         <Route path="/AMARANOC.git" element={<Home />} />
         <Route path="/discounts"  element={<DiscountPage />}/>
