@@ -122,8 +122,6 @@ export default function Home() {
                         categoryStr.includes("villa") ||
                         categoryStr.includes("առանձնատուն");
                 }
-
-                // Logic for "Homes" (Տնակներ)
                 if (selectedID === "homes") {
                     return categoryStr.includes("home") ||
                         categoryStr.includes("cabin") ||
@@ -141,6 +139,9 @@ export default function Home() {
                 }
                 if (selectedID === "magnificent view") {
                     return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան"));
+                }
+                if (selectedID === "required") {
+                    return Number(p.rating) === 5;
                 }
                 if (selectedID === "pavilion") {
                     return advantagesList.some(adv => adv.includes("pavilion") || adv.includes("besedka") || adv.includes("տաղավար"));
