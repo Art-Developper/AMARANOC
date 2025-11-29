@@ -20,6 +20,7 @@ export default function Home() {
     const [openMap, setOpenMap] = useState(false);
     const [openCalendar, setOpenCalendar] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
+
     const categoriesList = [
         { id: "mansion", title: "Առանձնատներ", icon: "https://api.amaranoc.am/home.svg" },
         { id: "frame houses", title: "Frame houses", icon: "https://api.amaranoc.am/frame_house.svg" },
@@ -31,6 +32,7 @@ export default function Home() {
         { id: "pavilion", title: "Տաղավար", icon: "https://api.amaranoc.am/pavilion.svg" },
         { id: "hotels", title: "Հյուրանոցներ", icon: "https://api.amaranoc.am/hotel.svg" },
     ];
+
     const daysOfWeek = ["երկ", "երք", "չրք", "հնգ", "ուրբ", "շբթ", "կիր"];
     const months = ["Հունվար", "Փետրվար", "Մարտ", "Ապրիլ", "Մայիս", "Հունիս", "Հուլիս", "Օգոստոս", "Սեպտեմբեր", "Հոկտեմբեր", "Նոյեմբեր", "Դեկտեմբեր"];
     const year = currentDate.getFullYear();
@@ -38,22 +40,25 @@ export default function Home() {
     const firstDay = new Date(year, month, 1).getDay();
     const lastDate = new Date(year, month + 1, 0).getDate();
     const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+
     const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
     const daysArray = [];
     for (let i = 0; i < adjustedFirstDay; i++) daysArray.push(null);
     for (let i = 1; i <= lastDate; i++) daysArray.push(i);
+
     const [filters, setFilters] = useState({
         regions: [],
         minPrice: 0,
         maxPrice: 9999999,
         rooms: null,
         bathrooms: null,
-        maxGuestsDay: null,
-        maxGuestsNight: null,
-        hasPool: null,
-        allowsOvernightStay: null,
-        amenities: [],
+        peopleDay: null,
+        peopleNight: null,
+        pool: null,
+        sleep: null,
+        advantages: [],
         rating: null
     });
 
@@ -68,15 +73,17 @@ export default function Home() {
                     let items = Object.entries(dataObj).map(([id, p]) => ({
                         id,
                         ...p,
-                        amenities: p.advantages || [],
+                        advantages: p.advantages || [],
                         images: p.images || [],
                         rating: p.star || p.stars || 0,
                         address: p.addres || "Unspecified",
-                        bathrooms: p.tualets || 0,
-                        maxGuestsDay: p.peopleCaunt || 0,
-                        maxGuestsNight: p.peopleSleepCaunt || 0,
-                        hasPool: p.baseyn === "yes" || p.baseyn === true,
-                        allowsOvernightStay: p.isSleep || false,
+                        price: Number(p.price || 0),
+                        bathrooms: Number(p.tualets || 0),
+                        rooms: Number(p.rooms || 0),
+                        peopleDay: Number(p.peopleCaunt || 0),
+                        peopleNight: Number(p.peopleSleepCaunt || 0),
+                        poolType: p.baseyn, 
+                        isSleep: (p.isSleep === true || p.isSleep === "yes" || p.isSleep === "true"),
                         category: p.category || "",
                     }));
                     setProperties(items);
@@ -91,6 +98,7 @@ export default function Home() {
         };
         fetchData();
     }, []);
+
     useEffect(() => {
         let data = [...properties];
 
@@ -103,28 +111,82 @@ export default function Home() {
             );
         }
         if (activeCategory) {
-            data = data.filter(p =>
-                (p.category || "").toLowerCase().includes(activeCategory.toLowerCase())
-            );
+            const selectedID = activeCategory.toLowerCase();
+
+            data = data.filter(p => {
+                const categoryStr = (p.category || "").toLowerCase();
+                const advantagesList = (p.advantages || []).map(a => a.toLowerCase());
+                const poolType = (p.poolType || "").toLowerCase();
+                if (selectedID === "mansion") {
+                    return categoryStr.includes("mansion") ||
+                        categoryStr.includes("villa") ||
+                        categoryStr.includes("առանձնատուն");
+                }
+
+                // Logic for "Homes" (Տնակներ)
+                if (selectedID === "homes") {
+                    return categoryStr.includes("home") ||
+                        categoryStr.includes("cabin") ||
+                        categoryStr.includes("cottage") ||
+                        categoryStr.includes("տնակ");
+                }
+                if (selectedID === "frame houses") {
+                    return categoryStr.includes("frame") || categoryStr.includes("a-frame");
+                }
+                if (selectedID === "swimming pool") {
+                    return poolType && poolType !== "" && poolType !== "no" && poolType !== "chka";
+                }
+                if (selectedID === "silent") {
+                    return advantagesList.some(adv => adv.includes("silent") || adv.includes("աղմուկ") || adv.includes("հանգիստ"));
+                }
+                if (selectedID === "magnificent view") {
+                    return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան"));
+                }
+                if (selectedID === "pavilion") {
+                    return advantagesList.some(adv => adv.includes("pavilion") || adv.includes("besedka") || adv.includes("տաղավար"));
+                }
+                if (selectedID === "hotels") {
+                    return categoryStr.includes("hotel") || categoryStr.includes("հյուրանոց");
+                }
+                return categoryStr.includes(selectedID) || advantagesList.some(a => a.includes(selectedID));
+            });
         }
         if (filters.regions.length) {
             data = data.filter(p => filters.regions.includes(p.address));
         }
         data = data.filter(p => {
-            const price = Number(p.price || 0);
-            return price >= Number(filters.minPrice || 0) && price <= Number(filters.maxPrice || 9999999);
+            return p.price >= Number(filters.minPrice || 0) && p.price <= Number(filters.maxPrice || 9999999);
         });
-
-        if (filters.rooms) data = data.filter(p => Number(p.rooms || 0) >= Number(filters.rooms));
-        if (filters.bathrooms) data = data.filter(p => Number(p.bathrooms || 0) >= Number(filters.bathrooms));
-        if (filters.maxGuestsDay) data = data.filter(p => Number(p.maxGuestsDay || 0) >= Number(filters.maxGuestsDay));
-        if (filters.maxGuestsNight) data = data.filter(p => Number(p.maxGuestsNight || 0) >= Number(filters.maxGuestsNight));
-        if (filters.hasPool !== null) data = data.filter(p => p.hasPool === filters.hasPool);
-        if (filters.allowsOvernightStay !== null) data = data.filter(p => Boolean(p.allowsOvernightStay) === Boolean(filters.allowsOvernightStay));
-        if (filters.amenities.length) {
-            data = data.filter(p => filters.amenities.every(a => (p.amenities || []).includes(a)));
+        if (filters.rooms) {
+            if (filters.rooms === '6+') {
+                data = data.filter(p => p.rooms >= 6);
+            } else {
+                data = data.filter(p => p.rooms === filters.rooms);
+            }
         }
-        if (filters.rating) data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
+        if (filters.bathrooms) {
+            data = data.filter(p => p.bathrooms === filters.bathrooms);
+        }
+        if (filters.peopleDay) {
+            data = data.filter(p => p.peopleDay >= filters.peopleDay);
+        }
+        if (filters.peopleNight) {
+            data = data.filter(p => p.peopleNight >= filters.peopleNight);
+        }
+        if (filters.sleep !== null) {
+            data = data.filter(p => p.isSleep === filters.sleep);
+        }
+        if (filters.pool) {
+            data = data.filter(p => p.poolType === filters.pool);
+        }
+        if (filters.advantages && filters.advantages.length > 0) {
+            data = data.filter(p =>
+                filters.advantages.every(adv => (p.advantages || []).includes(adv))
+            );
+        }
+        if (filters.rating) {
+            data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
+        }
 
         setFilteredProperties(data);
         setCurrentPage(1);
@@ -142,11 +204,11 @@ export default function Home() {
             maxPrice: 9999999,
             rooms: null,
             bathrooms: null,
-            maxGuestsDay: null,
-            maxGuestsNight: null,
-            hasPool: null,
-            allowsOvernightStay: null,
-            amenities: [],
+            peopleDay: null,
+            peopleNight: null,
+            pool: null,
+            sleep: null,
+            advantages: [],
             rating: null
         });
         setSearchTerm("");
@@ -240,8 +302,8 @@ export default function Home() {
                                         src={item.icon}
                                         alt={item.title}
                                         className={`w-6 h-6 transition-all duration-300 ${activeCategory === item.id
-                                                ? "opacity-100 scale-110"
-                                                : "opacity-60 group-hover:opacity-100"
+                                            ? "opacity-100 scale-110"
+                                            : "opacity-60 group-hover:opacity-100"
                                             }`}
                                     />
                                     <span className={`text-xs whitespace-nowrap transition-colors duration-300 ${activeCategory === item.id ? "text-orange-600 font-bold" : "text-gray-500"
@@ -286,7 +348,7 @@ export default function Home() {
                                             </span>
                                             <div className="flex items-center gap-3 mt-1">
                                                 <span className="flex items-center gap-1 text-gray-500 text-sm">
-                                                    <FaUsers className="text-gray-400" /> {p.maxGuestsDay} հոգի
+                                                    <FaUsers className="text-gray-400" /> {p.peopleDay} հոգի
                                                 </span>
                                             </div>
                                         </div>
