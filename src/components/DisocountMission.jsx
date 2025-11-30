@@ -209,11 +209,6 @@ export default function Discounts() {
                         
                     </div>
                 </div>
-                <button className='flex mt-10 w-full items-center justify-center '>
-                    <div className='px-10 py-3 bg-orange-600 text-white font-semibold rounded-full shadow-md transition text-lg'>
-                        Ցուցադրել ավելին
-                    </div>
-                </button>
             </div>
 
             {isModalOpen && (

@@ -45,12 +45,12 @@ const Header = () => {
 
             <div className="container mx-auto flex items-center justify-between px-4">
 
-                <Link to={"/AMARANOC.git"} className="flex">
+                <Link to={"/"} className="flex">
                     <img src={logo} alt="amaranoc_logo" className="w-36 h-11" />
                 </Link>
 
                 <nav className="hidden lg:flex items-center gap-8 text-lg font-medium">
-                    <Link to={"/AMARANOC.git"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">
+                    <Link to={"/"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">
                         Գլխավոր էջ
                     </Link>
                     <Link to={"/discounts"} className="text-black hover:underline hover:decoration-orange-500 transition-colors">

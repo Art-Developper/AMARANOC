@@ -262,7 +262,7 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
 
 
                     <div className="border-t pt-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                             <FaCalendarAlt className="text-orange-500" /> Ընտրեք օրերը
                         </label>
                         <div className="border rounded-xl overflow-hidden">
