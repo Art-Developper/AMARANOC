@@ -12,13 +12,28 @@ import Loader from './components/Loader';
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null); 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 2500);
+    const fetchData = async () => {
+      try {
+        const response = await fetch('https://api.dzer-kayq.com/products'); 
+        
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
 
-    return () => clearTimeout(timer); 
+        const result = await response.json();
+        console.log("Տվյալները ստացված են:", result);
+
+      } catch (error) {
+        console.error("Սխալ տվյալները ստանալիս:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   if (loading) {
