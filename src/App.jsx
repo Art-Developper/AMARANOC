@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/HomePage';
 import ServicePage from './pages/ServicePage';
 import DiscountPage from './pages/DiscountPage';
@@ -41,18 +41,18 @@ function App() {
   }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
-        <Route path="/AMARANOC.git" element={<Home />} />
-        <Route path="/discounts"  element={<DiscountPage />}/>
+        <Route path="/" element={<Home />} />
+        <Route path="/discounts" element={<DiscountPage />} />
         <Route path="/about" element={<About />} />
-        <Route path='/services' element={<ServicePage />}/>
-        <Route path='/chat' element={<ChatPage />}/>
-        <Route path='/login' element={<Login />} />
+        <Route path="/services" element={<ServicePage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/property/:id" element={<PropertyPage />} />
-        <Route path='/map' element={<Map />}/>
+        <Route path="/map" element={<Map />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

@@ -40,6 +40,7 @@ const PropertyPage = () => {
         : ["https://via.placeholder.com/800x600?text=No+Image"];
 
     const hasAmenity = (name) => property.advantages && property.advantages.includes(name);
+    const isSleepAllowed = property.isSleep === true || property.isSleep === "true" || property.isSleep === "yes";
 
     return (<>
         <Header />
@@ -82,11 +83,11 @@ const PropertyPage = () => {
                         <div className="space-y-4 text-sm">
                             <DetailRow label="# Կոդ" value={property.code || id.substring(0, 6).toUpperCase()} />
                             <DetailRow label="Հասցե" value={property.addres} icon={<FaMapMarkerAlt size={16} />} />
-                            <DetailRow label="Գիշերակաց" value={property.overnightStay ? "Այո" : "Ոչ"} icon={<FaMoon size={16} />} />
+                            <DetailRow label="Գիշերակաց" value={isSleepAllowed ? "Այո" : "Ոչ"} icon={<FaMoon size={16} />} />
                             <DetailRow label="Շինության մակերես" value={property.area ? `${property.area} քմ` : "-"} icon={<FaExpandArrowsAlt size={16} />} />
                             <DetailRow label="Մարդկանց թույլատրելի քանակ" value={property.peopleCaunt} icon={<FaUsers size={16} />} />
 
-                            {property.isSleep && (
+                            {isSleepAllowed && (
                                 <DetailRow
                                     label="Գիշերակացով մարդկանց քանակ"
                                     value={property.peopleSleepCaunt || "-"}
@@ -149,8 +150,7 @@ const PropertyPage = () => {
             {isModalOpen && (
                 <BookingModal
                     basePrice={Number(property.price)}
-                    allowOvernight={!!property.isSleep}
-                    overnightPrice={Number(property.overnightStay || 0)}
+                    allowOvernight={isSleepAllowed}
                     propertyId={id}
                     propertyName={property.addres}
                     onClose={() => setIsModalOpen(false)}
@@ -162,16 +162,17 @@ const PropertyPage = () => {
 };
 
 
-const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, propertyName, onClose }) => {
+const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onClose }) => {
     const [guests, setGuests] = useState(2);
     const [isOvernight, setIsOvernight] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null });
     const [clientInfo, setClientInfo] = useState({ name: '', phone: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const finalDailyPrice = basePrice + ((isOvernight && allowOvernight) ? overnightPrice : 0);
+    const finalDailyPrice = basePrice; 
 
     const calculateDays = () => {
+        if (!allowOvernight) return 1;
+
         if (!dateRange.start || !dateRange.end) return 0;
         const diffTime = Math.abs(dateRange.end - dateRange.start);
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -179,7 +180,7 @@ const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, p
     };
 
     const daysCount = calculateDays();
-    const totalPrice = finalDailyPrice * (daysCount || 1);
+    const totalPrice = finalDailyPrice * daysCount;
 
     const handleBooking = async (e) => {
         e.preventDefault();
@@ -194,7 +195,7 @@ const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, p
             checkOut: dateRange.end ? dateRange.end.toISOString() : '',
             checkInReadable: dateRange.start ? dateRange.start.toLocaleDateString('hy-AM') : '',
             checkOutReadable: dateRange.end ? dateRange.end.toLocaleDateString('hy-AM') : '',
-            daysCount: daysCount || 1,
+            daysCount: daysCount,
             totalPrice,
             clientName: clientInfo.name,
             clientPhone: clientInfo.phone,
@@ -228,7 +229,6 @@ const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, p
                 </div>
 
                 <div className="p-6 space-y-6">
-
                     <div className="space-y-4">
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Հյուրերի քանակ</label>
@@ -248,20 +248,29 @@ const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, p
                                     className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
                                 />
                                 <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-800">Գիշերակացով (+{overnightPrice.toLocaleString()} ֏)</span>
-                                    <span className="text-xs text-gray-500">Ավելանում է օրավարձին</span>
+                                    <span className="font-semibold text-gray-800">Գիշերակացով</span>
+                                    <span className="text-xs text-gray-500">Ներառված է արժեքի մեջ</span>
                                 </div>
                             </label>
+                        )}
+                        {!allowOvernight && (
+                             <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded">
+                                 Այս տնակում գիշերակաց նախատեսված չէ (միայն օրավարձ):
+                             </div>
                         )}
                     </div>
 
 
                     <div className="border-t pt-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                        <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                             <FaCalendarAlt className="text-orange-500" /> Ընտրեք օրերը
                         </label>
                         <div className="border rounded-xl overflow-hidden">
-                            <SelectableCalendar dateRange={dateRange} setDateRange={setDateRange} />
+                            <SelectableCalendar 
+                                dateRange={dateRange} 
+                                setDateRange={setDateRange} 
+                                allowOvernight={allowOvernight} 
+                            />
                         </div>
                         <div className="mt-2 text-sm text-gray-600 flex justify-between font-medium bg-gray-50 p-2 rounded">
                             <span>Սկիզբ: {dateRange.start ? dateRange.start.toLocaleDateString('hy-AM') : '-'}</span>
@@ -307,7 +316,7 @@ const BookingModal = ({ basePrice, allowOvernight, overnightPrice, propertyId, p
 };
 
 
-const SelectableCalendar = ({ dateRange, setDateRange }) => {
+const SelectableCalendar = ({ dateRange, setDateRange, allowOvernight }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const months = ["ՀՈՒՆՎԱՐ", "ՓԵՏՐՎԱՐ", "ՄԱՐՏ", "ԱՊՐԻԼ", "ՄԱՅԻՍ", "ՀՈՒՆԻՍ", "ՀՈՒԼԻՍ", "ՕԳՈՍՏՈՍ", "ՍԵՊՏԵՄԲԵՐ", "ՀՈԿՏԵՄԲԵՐ", "ՆՈՅԵՄԲԵՐ", "ԴԵԿՏԵՄԲԵՐ"];
     const daysOfWeek = ["Երկ", "Երք", "Չոր", "Հնգ", "Ուրբ", "Շաբ", "Կիր"];
@@ -325,6 +334,10 @@ const SelectableCalendar = ({ dateRange, setDateRange }) => {
         const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
         selectedDate.setHours(0, 0, 0, 0);
 
+        if (!allowOvernight) {
+            setDateRange({ start: selectedDate, end: selectedDate });
+            return;
+        }
         if (!dateRange.start || (dateRange.start && dateRange.end)) {
             setDateRange({ start: selectedDate, end: null });
         } else if (selectedDate < dateRange.start) {
