@@ -194,8 +194,11 @@ export default function Home() {
     }, [filters, properties, searchTerm, activeCategory]);
 
     const regionsList = useMemo(() => {
-        const setR = new Set(properties.map(p => p.address).filter(Boolean));
-        return Array.from(setR);
+        const normalizedRegions = properties
+            .map(p => p.address ? String(p.address).trim() : "")
+            .filter(region => region.length > 0);
+
+        return Array.from(new Set(normalizedRegions)).sort(); 
     }, [properties]);
 
     const resetFilters = () => {
