@@ -12,18 +12,19 @@ import Loader from './components/Loader';
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null); 
+  const [data, setData] = useState([]); 
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('https://api.dzer-kayq.com/products'); 
+        const response = await fetch('https://amaranoc-a35ab-default-rtdb.europe-west1.firebasedatabase.app/products.json'); 
         
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
 
         const result = await response.json();
+        setData(result);
         console.log("Տվյալները ստացված են:", result);
 
       } catch (error) {
@@ -43,13 +44,15 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home products={data} />} />
+        
         <Route path="/discounts" element={<DiscountPage />} />
         <Route path="/about" element={<About />} />
         <Route path="/services" element={<ServicePage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/property/:id" element={<PropertyPage />} />
+        <Route path="/property/:id" element={<PropertyPage products={data} />} />
+        
         <Route path="/map" element={<Map />} />
       </Routes>
     </HashRouter>
