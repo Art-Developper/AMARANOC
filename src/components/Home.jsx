@@ -13,6 +13,7 @@ import "swiper/css/pagination";
 
 export default function Home() {
     const [properties, setProperties] = useState([]);
+    const [filteredProperties, setFilteredProperties] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
     const [showFilters, setShowFilters] = useState(false);
@@ -62,8 +63,6 @@ export default function Home() {
         rating: null
     });
 
-    const [filteredProperties, setFilteredProperties] = useState([]);
-
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -75,14 +74,14 @@ export default function Home() {
                         ...p,
                         advantages: p.advantages || [],
                         images: p.images || [],
-                        rating: p.star || p.stars || 0,
+                        rating: Number(p.star || p.stars || 0),
                         address: p.addres || "Unspecified",
                         price: Number(p.price || 0),
                         bathrooms: Number(p.tualets || 0),
                         rooms: Number(p.rooms || 0),
                         peopleDay: Number(p.peopleCaunt || 0),
                         peopleNight: Number(p.peopleSleepCaunt || 0),
-                        poolType: p.baseyn, 
+                        poolType: p.baseyn,
                         isSleep: (p.isSleep === true || p.isSleep === "yes" || p.isSleep === "true"),
                         category: p.category || "",
                     }));
@@ -98,10 +97,8 @@ export default function Home() {
         };
         fetchData();
     }, []);
-
     useEffect(() => {
         let data = [...properties];
-
         if (searchTerm.trim() !== "") {
             const lowerTerm = searchTerm.toLowerCase();
             data = data.filter(p =>
@@ -110,6 +107,7 @@ export default function Home() {
                 (p.id && p.id.toString().toLowerCase().includes(lowerTerm))
             );
         }
+
         if (activeCategory) {
             const selectedID = activeCategory.toLowerCase();
 
@@ -117,47 +115,57 @@ export default function Home() {
                 const categoryStr = (p.category || "").toLowerCase();
                 const advantagesList = (p.advantages || []).map(a => a.toLowerCase());
                 const poolType = (p.poolType || "").toLowerCase();
-                if (selectedID === "mansion") {
-                    return categoryStr.includes("mansion") ||
-                        categoryStr.includes("villa") ||
-                        categoryStr.includes("առանձնատուն");
+
+                switch (selectedID) {
+                    case "mansion":
+                        return categoryStr.includes("mansion") || 
+                               categoryStr.includes("villa") || 
+                               categoryStr.includes("առանձնատուն");
+                    
+                    case "frame houses":
+                        return categoryStr.includes("frame") || categoryStr.includes("a-frame");
+
+                    case "homes":
+                        return categoryStr.includes("home") || 
+                               categoryStr.includes("cabin") || 
+                               categoryStr.includes("cottage") || 
+                               categoryStr.includes("տնակ");
+
+                    case "swimming pool":
+                        return poolType && poolType !== "" && poolType !== "no" && poolType !== "chka";
+
+                    case "silent":
+                        return advantagesList.some(adv => adv.includes("silent") || adv.includes("աղմուկ") || adv.includes("հանգիստ"));
+
+                    case "magnificent view":
+                        return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան") || adv.includes("բնություն"));
+
+                    case "required":
+                        return Number(p.rating) === 5;
+
+                    case "pavilion":
+                        return categoryStr.includes("pavilion") || 
+                               categoryStr.includes("տաղավար") ||
+                               categoryStr.includes("besedka") ||
+                               advantagesList.some(adv => adv.includes("pavilion") || adv.includes("տաղավար"));
+
+                    case "hotels":
+                        return categoryStr.includes("hotel") || categoryStr.includes("հյուրանոց");
+
+                    default:
+                        return categoryStr.includes(selectedID) || advantagesList.some(a => a.includes(selectedID));
                 }
-                if (selectedID === "homes") {
-                    return categoryStr.includes("home") ||
-                        categoryStr.includes("cabin") ||
-                        categoryStr.includes("cottage") ||
-                        categoryStr.includes("տնակ");
-                }
-                if (selectedID === "frame houses") {
-                    return categoryStr.includes("frame") || categoryStr.includes("a-frame");
-                }
-                if (selectedID === "swimming pool") {
-                    return poolType && poolType !== "" && poolType !== "no" && poolType !== "chka";
-                }
-                if (selectedID === "silent") {
-                    return advantagesList.some(adv => adv.includes("silent") || adv.includes("աղմուկ") || adv.includes("հանգիստ"));
-                }
-                if (selectedID === "magnificent view") {
-                    return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան"));
-                }
-                if (selectedID === "required") {
-                    return Number(p.rating) === 5;
-                }
-                if (selectedID === "pavilion") {
-                    return advantagesList.some(adv => adv.includes("pavilion") || adv.includes("besedka") || adv.includes("տաղավար"));
-                }
-                if (selectedID === "hotels") {
-                    return categoryStr.includes("hotel") || categoryStr.includes("հյուրանոց");
-                }
-                return categoryStr.includes(selectedID) || advantagesList.some(a => a.includes(selectedID));
             });
         }
+
         if (filters.regions.length) {
             data = data.filter(p => filters.regions.includes(p.address));
         }
+
         data = data.filter(p => {
             return p.price >= Number(filters.minPrice || 0) && p.price <= Number(filters.maxPrice || 9999999);
         });
+
         if (filters.rooms) {
             if (filters.rooms === '6+') {
                 data = data.filter(p => p.rooms >= 6);
@@ -229,6 +237,7 @@ export default function Home() {
     return (
         <div className="p-4 md:p-8 bg-white min-h-screen relative">
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+                
                 <div className={`
                     fixed inset-0 z-50 bg-white p-6 overflow-y-auto transition-transform duration-300 ease-in-out
                     ${showFilters ? "translate-x-0" : "-translate-x-full"}
@@ -258,6 +267,7 @@ export default function Home() {
                 {showFilters && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" onClick={() => setShowFilters(false)}></div>
                 )}
+
                 <div className="flex-1">
                     <div className="mb-6 flex flex-col gap-4">
                         <h1 className="text-3xl font-extrabold text-orange-700">
@@ -292,6 +302,8 @@ export default function Home() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Category Tabs */}
                     <div className="w-full border-b pb-2 mb-8">
                         <div className="flex items-center gap-6 overflow-x-auto no-scrollbar px-2 py-3">
                             {categoriesList.map((item) => (
@@ -320,6 +332,7 @@ export default function Home() {
                             ))}
                         </div>
                     </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredProperties.length === 0 && (
                             <div className="col-span-full text-center text-orange-400 mt-12 text-lg">
@@ -369,6 +382,7 @@ export default function Home() {
                             </Link>
                         ))}
                     </div>
+
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-4 mt-12">
                             <button
@@ -401,6 +415,7 @@ export default function Home() {
                     )}
                 </div>
             </div>
+
             {openCalendar && (
                 <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60]">
                     <div className="bg-white w-[95%] md:w-[70%] lg:w-[45%] rounded-2xl p-0 shadow-2xl">
@@ -428,6 +443,7 @@ export default function Home() {
                     </div>
                 </div>
             )}
+
             {openMap && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
                     <div className="bg-white rounded-2xl w-[90%] md:w-[80%] lg:w-[60%] h-[80vh] relative shadow-2xl flex flex-col overflow-hidden">
