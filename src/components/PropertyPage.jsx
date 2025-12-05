@@ -153,6 +153,8 @@ const PropertyPage = () => {
                     allowOvernight={isSleepAllowed}
                     propertyId={id}
                     propertyName={property.addres}
+                    maxPeople={parseInt(property.peopleCaunt) || 50} 
+                    maxSleepPeople={parseInt(property.peopleSleepCaunt) || parseInt(property.peopleCaunt) || 50}
                     onClose={() => setIsModalOpen(false)}
                 />
             )}
@@ -162,16 +164,30 @@ const PropertyPage = () => {
 };
 
 
-const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onClose }) => {
+const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onClose, maxPeople, maxSleepPeople }) => {
     const [guests, setGuests] = useState(2);
     const [isOvernight, setIsOvernight] = useState(false);
     const [dateRange, setDateRange] = useState({ start: null, end: null });
     const [clientInfo, setClientInfo] = useState({ name: '', phone: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const finalDailyPrice = basePrice; 
+    const finalDailyPrice = basePrice;
+
+    const currentLimit = (allowOvernight && isOvernight) ? maxSleepPeople : maxPeople;
+
+    useEffect(() => {
+        if (guests > currentLimit) {
+            setGuests(currentLimit);
+        }
+    }, [isOvernight, currentLimit, guests]);
+
+    useEffect(() => {
+        if (!isOvernight && dateRange.start && dateRange.end && dateRange.start.getTime() !== dateRange.end.getTime()) {
+            setDateRange({ start: dateRange.start, end: dateRange.start });
+        }
+    }, [isOvernight, dateRange]);
 
     const calculateDays = () => {
-        if (!allowOvernight) return 1;
+        if (!isOvernight) return 1;
 
         if (!dateRange.start || !dateRange.end) return 0;
         const diffTime = Math.abs(dateRange.end - dateRange.start);
@@ -230,17 +246,9 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
 
                 <div className="p-6 space-y-6">
                     <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Հյուրերի քանակ</label>
-                            <div className="flex items-center gap-4">
-                                <button onClick={() => setGuests(Math.max(1, guests - 1))} className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xl font-bold">-</button>
-                                <span className="text-xl font-bold w-8 text-center">{guests}</span>
-                                <button onClick={() => setGuests(guests + 1)} className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xl font-bold">+</button>
-                            </div>
-                        </div>
-
-                        {allowOvernight && (
-                            <label className="flex items-center gap-3 p-3 border rounded-xl cursor-pointer hover:bg-orange-50 transition border-orange-100 bg-orange-50/30">
+                        {allowOvernight ? (
+                            <label className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition 
+                                ${isOvernight ? 'bg-orange-50 border-orange-200 ring-1 ring-orange-200' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'}`}>
                                 <input
                                     type="checkbox"
                                     checked={isOvernight}
@@ -248,16 +256,51 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
                                     className="w-5 h-5 text-orange-600 focus:ring-orange-500 rounded"
                                 />
                                 <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-800">Գիշերակացով</span>
-                                    <span className="text-xs text-gray-500">Ներառված է արժեքի մեջ</span>
+                                    <span className="font-bold text-gray-800">Գիշերակացով</span>
+                                    <span className="text-xs text-gray-500">
+                                        {isOvernight ? "Կարող եք ընտրել մի քանի օր" : "Նշեք, եթե ցանկանում եք մնալ գիշերով"}
+                                    </span>
                                 </div>
                             </label>
+                        ) : (
+                            <div className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded border border-gray-100">
+                                Այս տնակում գիշերակաց նախատեսված չէ (միայն օրավարձ):
+                            </div>
                         )}
-                        {!allowOvernight && (
-                             <div className="text-sm text-gray-500 italic p-2 bg-gray-50 rounded">
-                                 Այս տնակում գիշերակաց նախատեսված չէ (միայն օրավարձ):
-                             </div>
-                        )}
+
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-semibold text-gray-700">Հյուրերի քանակ</label>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${isOvernight ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'}`}>
+                                    Առավելագույնը՝ {currentLimit} անձ
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => setGuests(Math.max(1, guests - 1))}
+                                    className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xl font-bold hover:bg-gray-200 transition"
+                                >
+                                    -
+                                </button>
+                                <span className="text-xl font-bold w-8 text-center">{guests}</span>
+                                <button
+                                    onClick={() => {
+                                        if (guests < currentLimit) {
+                                            setGuests(guests + 1);
+                                        }
+                                    }}
+                                    disabled={guests >= currentLimit}
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold transition
+                                        ${guests >= currentLimit
+                                            ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                                            : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                                        }
+                                    `}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
 
@@ -265,11 +308,14 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
                         <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                             <FaCalendarAlt className="text-orange-500" /> Ընտրեք օրերը
                         </label>
+                       
+
                         <div className="border rounded-xl overflow-hidden">
-                            <SelectableCalendar 
-                                dateRange={dateRange} 
-                                setDateRange={setDateRange} 
-                                allowOvernight={allowOvernight} 
+                            <SelectableCalendar
+                                dateRange={dateRange}
+                                setDateRange={setDateRange}
+                                allowOvernight={allowOvernight}
+                                isBookingOvernight={isOvernight}
                             />
                         </div>
                         <div className="mt-2 text-sm text-gray-600 flex justify-between font-medium bg-gray-50 p-2 rounded">
@@ -316,7 +362,7 @@ const BookingModal = ({ basePrice, allowOvernight, propertyId, propertyName, onC
 };
 
 
-const SelectableCalendar = ({ dateRange, setDateRange, allowOvernight }) => {
+const SelectableCalendar = ({ dateRange, setDateRange, allowOvernight, isBookingOvernight }) => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const months = ["ՀՈՒՆՎԱՐ", "ՓԵՏՐՎԱՐ", "ՄԱՐՏ", "ԱՊՐԻԼ", "ՄԱՅԻՍ", "ՀՈՒՆԻՍ", "ՀՈՒԼԻՍ", "ՕԳՈՍՏՈՍ", "ՍԵՊՏԵՄԲԵՐ", "ՀՈԿՏԵՄԲԵՐ", "ՆՈՅԵՄԲԵՐ", "ԴԵԿՏԵՄԲԵՐ"];
     const daysOfWeek = ["Երկ", "Երք", "Չոր", "Հնգ", "Ուրբ", "Շաբ", "Կիր"];
@@ -334,10 +380,11 @@ const SelectableCalendar = ({ dateRange, setDateRange, allowOvernight }) => {
         const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
         selectedDate.setHours(0, 0, 0, 0);
 
-        if (!allowOvernight) {
+        if (!allowOvernight || !isBookingOvernight) {
             setDateRange({ start: selectedDate, end: selectedDate });
             return;
         }
+
         if (!dateRange.start || (dateRange.start && dateRange.end)) {
             setDateRange({ start: selectedDate, end: null });
         } else if (selectedDate < dateRange.start) {
