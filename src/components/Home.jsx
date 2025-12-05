@@ -13,6 +13,7 @@ import "swiper/css/pagination";
 
 export default function Home() {
     const [properties, setProperties] = useState([]);
+    const [orders, setOrders] = useState([]);
     const [filteredProperties, setFilteredProperties] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState("");
@@ -21,6 +22,8 @@ export default function Home() {
     const [openMap, setOpenMap] = useState(false);
     const [openCalendar, setOpenCalendar] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [filterDateRange, setFilterDateRange] = useState({ start: null, end: null }); 
+    const [tempDateRange, setTempDateRange] = useState({ start: null, end: null });
 
     const categoriesList = [
         { id: "mansion", title: "Առանձնատներ", icon: "https://api.amaranoc.am/home.svg" },
@@ -66,10 +69,11 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const snapshot = await get(ref(dbRealtime, "properties"));
-                if (snapshot.exists()) {
-                    const dataObj = snapshot.val();
-                    let items = Object.entries(dataObj).map(([id, p]) => ({
+                const propertiesSnapshot = await get(ref(dbRealtime, "properties"));
+                let items = [];
+                if (propertiesSnapshot.exists()) {
+                    const dataObj = propertiesSnapshot.val();
+                    items = Object.entries(dataObj).map(([id, p]) => ({
                         id,
                         ...p,
                         advantages: p.advantages || [],
@@ -85,12 +89,16 @@ export default function Home() {
                         isSleep: (p.isSleep === true || p.isSleep === "yes" || p.isSleep === "true"),
                         category: p.category || "",
                     }));
-                    setProperties(items);
-                    setFilteredProperties(items);
-                } else {
-                    setProperties([]);
-                    setFilteredProperties([]);
                 }
+                const ordersSnapshot = await get(ref(dbRealtime, "orders"));
+                let ordersData = [];
+                if (ordersSnapshot.exists()) {
+                    ordersData = Object.values(ordersSnapshot.val());
+                }
+
+                setProperties(items);
+                setOrders(ordersData);
+                setFilteredProperties(items);
             } catch (err) {
                 console.error("Firebase fetch error:", err);
             }
@@ -110,122 +118,115 @@ export default function Home() {
 
         if (activeCategory) {
             const selectedID = activeCategory.toLowerCase();
-
             data = data.filter(p => {
                 const categoryStr = (p.category || "").toLowerCase();
                 const advantagesList = (p.advantages || []).map(a => a.toLowerCase());
                 const poolType = (p.poolType || "").toLowerCase();
 
                 switch (selectedID) {
-                    case "mansion":
-                        return categoryStr.includes("mansion") || 
-                               categoryStr.includes("villa") || 
-                               categoryStr.includes("առանձնատուն");
-                    
-                    case "frame houses":
-                        return categoryStr.includes("frame") || categoryStr.includes("a-frame");
-
-                    case "homes":
-                        return categoryStr.includes("home") || 
-                               categoryStr.includes("cabin") || 
-                               categoryStr.includes("cottage") || 
-                               categoryStr.includes("տնակ");
-
-                    case "swimming pool":
-                        return poolType && poolType !== "" && poolType !== "no" && poolType !== "chka";
-
-                    case "silent":
-                        return advantagesList.some(adv => adv.includes("silent") || adv.includes("աղմուկ") || adv.includes("հանգիստ"));
-
-                    case "magnificent view":
-                        return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան") || adv.includes("բնություն"));
-
-                    case "required":
-                        return Number(p.rating) === 5;
-
-                    case "pavilion":
-                        return categoryStr.includes("pavilion") || 
-                               categoryStr.includes("տաղավար") ||
-                               categoryStr.includes("besedka") ||
-                               advantagesList.some(adv => adv.includes("pavilion") || adv.includes("տաղավար"));
-
-                    case "hotels":
-                        return categoryStr.includes("hotel") || categoryStr.includes("հյուրանոց");
-
-                    default:
-                        return categoryStr.includes(selectedID) || advantagesList.some(a => a.includes(selectedID));
+                    case "mansion": return categoryStr.includes("mansion") || categoryStr.includes("villa") || categoryStr.includes("առանձնատուն");
+                    case "frame houses": return categoryStr.includes("frame") || categoryStr.includes("a-frame");
+                    case "homes": return categoryStr.includes("home") || categoryStr.includes("cabin") || categoryStr.includes("cottage") || categoryStr.includes("տնակ");
+                    case "swimming pool": return poolType && poolType !== "" && poolType !== "no" && poolType !== "chka";
+                    case "silent": return advantagesList.some(adv => adv.includes("silent") || adv.includes("աղմուկ") || adv.includes("հանգիստ"));
+                    case "magnificent view": return advantagesList.some(adv => adv.includes("view") || adv.includes("տեսարան") || adv.includes("բնություն"));
+                    case "required": return Number(p.rating) === 5;
+                    case "pavilion": return categoryStr.includes("pavilion") || categoryStr.includes("տաղավար") || categoryStr.includes("besedka");
+                    case "hotels": return categoryStr.includes("hotel") || categoryStr.includes("հյուրանոց");
+                    default: return categoryStr.includes(selectedID) || advantagesList.some(a => a.includes(selectedID));
                 }
             });
         }
 
-        if (filters.regions.length) {
-            data = data.filter(p => filters.regions.includes(p.address));
-        }
+        if (filters.regions.length) data = data.filter(p => filters.regions.includes(p.address));
+        data = data.filter(p => p.price >= Number(filters.minPrice || 0) && p.price <= Number(filters.maxPrice || 9999999));
+        if (filters.rooms) filters.rooms === '6+' ? data = data.filter(p => p.rooms >= 6) : data = data.filter(p => p.rooms === filters.rooms);
+        if (filters.bathrooms) data = data.filter(p => p.bathrooms === filters.bathrooms);
+        if (filters.peopleDay) data = data.filter(p => p.peopleDay >= filters.peopleDay);
+        if (filters.peopleNight) data = data.filter(p => p.peopleNight >= filters.peopleNight);
+        if (filters.sleep !== null) data = data.filter(p => p.isSleep === filters.sleep);
+        if (filters.pool) data = data.filter(p => p.poolType === filters.pool);
+        if (filters.advantages.length > 0) data = data.filter(p => filters.advantages.every(adv => (p.advantages || []).includes(adv)));
+        if (filters.rating) data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
+        if (filterDateRange.start) {
+            const userStart = filterDateRange.start.getTime();
+            const userEnd = filterDateRange.end ? filterDateRange.end.getTime() : userStart; 
 
-        data = data.filter(p => {
-            return p.price >= Number(filters.minPrice || 0) && p.price <= Number(filters.maxPrice || 9999999);
-        });
+            data = data.filter(property => {
+                const propertyOrders = orders.filter(o => o.propertyId === property.id);
+                
+                const hasConflict = propertyOrders.some(order => {
+                    if (!order.checkIn || !order.checkOut) return false;
+                    const orderStart = new Date(order.checkIn).getTime();
+                    const orderEnd = new Date(order.checkOut).getTime();
 
-        if (filters.rooms) {
-            if (filters.rooms === '6+') {
-                data = data.filter(p => p.rooms >= 6);
-            } else {
-                data = data.filter(p => p.rooms === filters.rooms);
-            }
-        }
-        if (filters.bathrooms) {
-            data = data.filter(p => p.bathrooms === filters.bathrooms);
-        }
-        if (filters.peopleDay) {
-            data = data.filter(p => p.peopleDay >= filters.peopleDay);
-        }
-        if (filters.peopleNight) {
-            data = data.filter(p => p.peopleNight >= filters.peopleNight);
-        }
-        if (filters.sleep !== null) {
-            data = data.filter(p => p.isSleep === filters.sleep);
-        }
-        if (filters.pool) {
-            data = data.filter(p => p.poolType === filters.pool);
-        }
-        if (filters.advantages && filters.advantages.length > 0) {
-            data = data.filter(p =>
-                filters.advantages.every(adv => (p.advantages || []).includes(adv))
-            );
-        }
-        if (filters.rating) {
-            data = data.filter(p => Number(p.rating || 0) >= Number(filters.rating));
+                    return userStart < orderEnd && userEnd > orderStart;
+                });
+
+                return !hasConflict;
+            });
         }
 
         setFilteredProperties(data);
         setCurrentPage(1);
-    }, [filters, properties, searchTerm, activeCategory]);
+    }, [filters, properties, searchTerm, activeCategory, orders, filterDateRange]);
 
     const regionsList = useMemo(() => {
         const normalizedRegions = properties
             .map(p => p.address ? String(p.address).trim() : "")
             .filter(region => region.length > 0);
-
         return Array.from(new Set(normalizedRegions)).sort(); 
     }, [properties]);
 
     const resetFilters = () => {
         setFilters({
-            regions: [],
-            minPrice: 0,
-            maxPrice: 9999999,
-            rooms: null,
-            bathrooms: null,
-            peopleDay: null,
-            peopleNight: null,
-            pool: null,
-            sleep: null,
-            advantages: [],
-            rating: null
+            regions: [], minPrice: 0, maxPrice: 9999999, rooms: null, bathrooms: null,
+            peopleDay: null, peopleNight: null, pool: null, sleep: null, advantages: [], rating: null
         });
         setSearchTerm("");
         setActiveCategory(null);
+        setFilterDateRange({ start: null, end: null });
     };
+
+    const handleDayClick = (day) => {
+        if (!day) return;
+        const clickedDate = new Date(year, month, day);
+        clickedDate.setHours(0,0,0,0);
+
+        if (!tempDateRange.start || (tempDateRange.start && tempDateRange.end)) {
+            setTempDateRange({ start: clickedDate, end: null });
+        } 
+        else {
+            if (clickedDate < tempDateRange.start) {
+                setTempDateRange({ start: clickedDate, end: null });
+            } else {
+                setTempDateRange({ ...tempDateRange, end: clickedDate });
+            }
+        }
+    };
+
+    const isDateSelected = (day) => {
+        if (!day || !tempDateRange.start) return false;
+        const current = new Date(year, month, day).getTime();
+        const start = tempDateRange.start.getTime();
+        const end = tempDateRange.end ? tempDateRange.end.getTime() : null;
+
+        if (current === start) return "start";
+        if (end && current === end) return "end";
+        if (end && current > start && current < end) return "between";
+        return false;
+    };
+
+    const confirmDates = () => {
+        setFilterDateRange(tempDateRange);
+        setOpenCalendar(false);
+    };
+
+    const clearDates = () => {
+        setTempDateRange({ start: null, end: null });
+        setFilterDateRange({ start: null, end: null });
+        setOpenCalendar(false);
+    }
 
     const totalPages = Math.ceil(filteredProperties.length / 10);
     const paginatedProperties = useMemo(() => {
@@ -243,7 +244,7 @@ export default function Home() {
                     ${showFilters ? "translate-x-0" : "-translate-x-full"}
                     lg:static lg:translate-x-0 lg:w-1/4 lg:p-0 lg:bg-transparent lg:block lg:overflow-visible
                 `}>
-                    <div className="flex justify-between items-center mb-6 lg:hidden border-b pb-4 border-gray-100">
+                     <div className="flex justify-between items-center mb-6 lg:hidden border-b pb-4 border-gray-100">
                         <h2 className="text-xl font-bold text-orange-700">Որոնում և Ֆիլտրեր</h2>
                         <button onClick={() => setShowFilters(false)} className="p-2 bg-gray-100 rounded-full text-gray-600 hover:bg-gray-200">
                             <FaTimes />
@@ -257,7 +258,7 @@ export default function Home() {
                         regionsList={regionsList}
                         resetFilters={resetFilters}
                     />
-                    <div className="mt-4 lg:hidden">
+                     <div className="mt-4 lg:hidden">
                         <button onClick={() => setShowFilters(false)} className="w-full bg-orange-600 text-white py-3 rounded-xl font-bold shadow-lg">
                             Տեսնել արդյունքները
                         </button>
@@ -296,14 +297,17 @@ export default function Home() {
                                     <FaMap className="text-lg" />
                                     <span>Քարտեզ</span>
                                 </button>
-                                <button onClick={() => setOpenCalendar(true)} className="flex items-center justify-center p-3 border-2 border-orange-200 text-orange-600 rounded-full hover:bg-orange-50 transition shadow-sm">
+                                <button onClick={() => setOpenCalendar(true)} className={`flex items-center justify-center p-3 border-2 rounded-full transition shadow-sm ${filterDateRange.start ? 'bg-orange-100 border-orange-500 text-orange-700' : 'border-orange-200 text-orange-600 hover:bg-orange-50'}`}>
                                     <CiCalendar className="text-2xl" />
+                                    {filterDateRange.start && <span className="ml-2 text-sm font-bold whitespace-nowrap">
+                                        {filterDateRange.start.getDate()}/{filterDateRange.start.getMonth()+1} 
+                                        {filterDateRange.end ? ` - ${filterDateRange.end.getDate()}/${filterDateRange.end.getMonth()+1}` : ''}
+                                    </span>}
                                 </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Category Tabs */}
                     <div className="w-full border-b pb-2 mb-8">
                         <div className="flex items-center gap-6 overflow-x-auto no-scrollbar px-2 py-3">
                             {categoriesList.map((item) => (
@@ -336,7 +340,8 @@ export default function Home() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {filteredProperties.length === 0 && (
                             <div className="col-span-full text-center text-orange-400 mt-12 text-lg">
-                                Ցավոք, այս պահին համապատասխան արդյունքներ չկան։
+                                Ցավոք, այս պահին համապատասխան արդյունքներ չկան։ 
+                                {filterDateRange.start && <div className="text-sm text-gray-500 mt-2">Փորձեք փոխել ամսաթվերը։</div>}
                             </div>
                         )}
 
@@ -385,32 +390,9 @@ export default function Home() {
 
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-4 mt-12">
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                                disabled={currentPage === 1}
-                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
-                            >
-                                ← Նախորդ
-                            </button>
-                            {[...Array(totalPages)].map((_, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => setCurrentPage(i + 1)}
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-lg transition-all ${currentPage === i + 1
-                                        ? "bg-orange-600 text-white font-bold shadow-lg scale-110"
-                                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                        }`}
-                                >
-                                    {i + 1}
-                                </button>
-                            ))}
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-                                disabled={currentPage === totalPages}
-                                className="px-4 py-2 rounded-lg bg-orange-100 hover:bg-orange-200 disabled:opacity-50 text-orange-700 font-semibold"
-                            >
-                                Հաջորդ →
-                            </button>
+                           <button onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="px-4 py-2 rounded-lg bg-orange-100 text-orange-700">←</button>
+                           <span className="font-bold">{currentPage}</span>
+                           <button onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="px-4 py-2 rounded-lg bg-orange-100 text-orange-700">→</button>
                         </div>
                     )}
                 </div>
@@ -432,13 +414,35 @@ export default function Home() {
                             {daysOfWeek.map((d, i) => <div key={i}>{d}</div>)}
                         </div>
                         <div className="grid grid-cols-7 gap-2 px-5 py-5 text-[14px] text-gray-700">
-                            {daysArray.map((day, i) => (
-                                <div key={i} className={`flex items-center justify-center h-10 w-10 mx-auto rounded-full ${day ? "cursor-pointer hover:bg-orange-100 hover:text-orange-700" : ""}`}>{day || ""}</div>
-                            ))}
+                            {daysArray.map((day, i) => {
+                                const status = isDateSelected(day);
+                                return (
+                                    <div 
+                                        key={i} 
+                                        onClick={() => handleDayClick(day)}
+                                        className={`flex items-center justify-center h-10 w-10 mx-auto rounded-full transition-all
+                                            ${day ? "cursor-pointer hover:bg-orange-100" : ""}
+                                            ${status === "start" || status === "end" ? "bg-orange-600 text-white shadow-md font-bold hover:bg-orange-700" : ""}
+                                            ${status === "between" ? "bg-orange-100 text-orange-800" : ""}
+                                        `}
+                                    >
+                                        {day || ""}
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <div className="flex justify-end gap-3 px-6 pb-5 mt-2">
-                            <button onClick={() => setOpenCalendar(false)} className="text-gray-500 hover:text-gray-800 px-4 py-2">Չեղարկել</button>
-                            <button onClick={() => setOpenCalendar(false)} className="bg-orange-600 text-white py-2 px-6 rounded-xl shadow-lg">Հաստատել</button>
+                        <div className="flex justify-between items-center px-6 pb-5 mt-2">
+                             <button onClick={clearDates} className="text-red-500 text-sm hover:underline">Մաքրել օրերը</button>
+                             <div className="flex gap-3">
+                                <button onClick={() => setOpenCalendar(false)} className="text-gray-500 hover:text-gray-800 px-4 py-2">Չեղարկել</button>
+                                <button 
+                                    onClick={confirmDates} 
+                                    className="bg-orange-600 text-white py-2 px-6 rounded-xl shadow-lg hover:bg-orange-700 disabled:opacity-50"
+                                    disabled={!tempDateRange.start}
+                                >
+                                    Հաստատել
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
